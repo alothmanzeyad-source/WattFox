@@ -1585,12 +1585,8 @@ function KPI({
 function StromtarifCockpit() {
   const [type, setType] = useState("EFH");
   const [scale, setScale] = useState(BUILDING_TYPES.EFH.defaultScale);
-  const [csvBase, setCsvBase] = useState(null);
-  const [csvUnit, setCsvUnit] = useState("kW");
-  const [csvName, setCsvName] = useState(null);
-  const [csvRawText, setCsvRawText] = useState(null);
-  const [csvRawBuffer, setCsvRawBuffer] = useState(null);
-  const [csvInfo, setCsvInfo] = useState(null);
+  const [datasets, setDatasets] = useState([]); // [{id, name, unit, values, rawText, rawBuffer, info}]
+  const [activeDatasetId, setActiveDatasetId] = useState(null);
   const fileRef = useRef(null);
   const [levers, setLevers] = useState({
     pv: false,
@@ -1637,57 +1633,86 @@ function StromtarifCockpit() {
       leistungActive: BUILDING_TYPES[t].tag === "commercial"
     }));
   }
-  function handleCSV(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploadError(null);
-    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        let result;
-        if (isExcel) {
-          result = parseExcel(reader.result);
-          setCsvRawText(null); // Spaltenwechsel bei Excel erfolgt über die Datei selbst, nicht Rohtext
-          setCsvRawBuffer(reader.result);
-        } else {
-          result = parseCSV(reader.result);
-          setCsvRawText(reader.result);
-          setCsvRawBuffer(null);
+  function parseOneFile(file) {
+    return new Promise((resolve, reject) => {
+      const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const result = isExcel ? parseExcel(reader.result) : parseCSV(reader.result);
+          if (result.values.length < STEPS_PER_DAY) {
+            throw new Error(`"${file.name}": zu wenige gültige Datenpunkte (${result.values.length} von mind. 96 nötig).`);
+          }
+          resolve({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: file.name,
+            unit: "kW",
+            values: result.values,
+            rawText: isExcel ? null : reader.result,
+            rawBuffer: isExcel ? reader.result : null,
+            info: result
+          });
+        } catch (err) {
+          reject(err);
         }
-        if (result.values.length < STEPS_PER_DAY) {
-          throw new Error(`Zu wenige gültige Datenpunkte gefunden (${result.values.length} von mind. 96 nötig). Prüfe die Datei oder wähle unten manuell die richtige Spalte.`);
-        }
-        setCsvBase(result.values);
-        setCsvInfo(result);
-        setCsvName(file.name);
-      } catch (err) {
-        setUploadError(err.message);
-      }
-    };
-    reader.onerror = () => setUploadError("Datei konnte nicht gelesen werden.");
-    if (isExcel) reader.readAsArrayBuffer(file);else reader.readAsText(file);
+      };
+      reader.onerror = () => reject(new Error(`"${file.name}" konnte nicht gelesen werden.`));
+      if (isExcel) reader.readAsArrayBuffer(file);else reader.readAsText(file);
+    });
   }
-  function handleColumnChange(newColumn) {
-    let result;
-    if (csvRawBuffer) result = parseExcel(csvRawBuffer, newColumn);else if (csvRawText) result = parseCSV(csvRawText, newColumn);else return;
+  async function handleCSV(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadError(null);
+    const newDatasets = [];
+    const errors = [];
+    for (const file of files) {
+      try {
+        newDatasets.push(await parseOneFile(file));
+      } catch (err) {
+        errors.push(err.message);
+      }
+    }
+    if (newDatasets.length > 0) {
+      setDatasets(prev => [...prev, ...newDatasets]);
+      setActiveDatasetId(newDatasets[newDatasets.length - 1].id);
+    }
+    if (errors.length > 0) setUploadError(errors.join(" · "));
+    e.target.value = ""; // erlaubt erneutes Hochladen derselben Datei(en)
+  }
+  function updateDataset(id, patch) {
+    setDatasets(prev => prev.map(ds => ds.id === id ? {
+      ...ds,
+      ...patch
+    } : ds));
+  }
+  function removeDataset(id) {
+    setDatasets(prev => prev.filter(ds => ds.id !== id));
+    if (activeDatasetId === id) setActiveDatasetId(null);
+  }
+  function handleColumnChange(id, newColumn) {
+    const ds = datasets.find(d => d.id === id);
+    if (!ds) return;
+    const result = ds.rawBuffer ? parseExcel(ds.rawBuffer, newColumn) : parseCSV(ds.rawText, newColumn);
     if (result.values.length < STEPS_PER_DAY) {
       setUploadError(`Spalte ${newColumn + 1} enthält zu wenige gültige Zahlenwerte.`);
       return;
     }
     setUploadError(null);
-    setCsvBase(result.values);
-    setCsvInfo(result);
+    updateDataset(id, {
+      values: result.values,
+      info: result
+    });
   }
-
+  const activeDataset = datasets.find(d => d.id === activeDatasetId) || null;
   // Hochgeladene Rohwerte in kWh/15min umrechnen, je nach gewählter Einheit.
   // "kW" (Leistung, z.B. "Wirkleistung [kW]" wie in Schweizer Netzbetreiber-
   // Exporten üblich) muss mit 0.25h multipliziert werden, um die Energie im
   // 15-Minuten-Intervall zu erhalten. "kWh" (Energie/Intervall) bleibt 1:1.
   const csvBaseKwh = useMemo(() => {
-    if (!csvBase) return null;
-    return csvUnit === "kW" ? csvBase.map(v => v * 0.25) : csvBase;
-  }, [csvBase, csvUnit]);
+    if (!activeDataset) return null;
+    return activeDataset.unit === "kW" ? activeDataset.values.map(v => v * 0.25) : activeDataset.values;
+  }, [activeDataset]);
   const sim = useMemo(() => runSimulation({
     type,
     scale,
@@ -1758,6 +1783,30 @@ function StromtarifCockpit() {
     kwh: +m.grid.toFixed(0),
     cost: +(m.costEnergy + m.costNetz).toFixed(0)
   }));
+
+  // Mehrjahres-/Datensatzvergleich: jeder hochgeladene Datensatz wird mit den
+  // AKTUELLEN Hebel- und Tarifeinstellungen durchgerechnet — zeigt, wie sich
+  // Verbrauch und Kosten von Jahr zu Jahr (bzw. Datensatz zu Datensatz)
+  // entwickeln, bei sonst gleichem System.
+  const multiYearComparison = useMemo(() => {
+    if (datasets.length < 2) return null;
+    return datasets.map(ds => {
+      const kwhData = ds.unit === "kW" ? ds.values.map(v => v * 0.25) : ds.values;
+      const s = runSimulation({
+        type,
+        scale,
+        levers,
+        tariff,
+        csvBase: kwhData,
+        startWeekday: 1
+      });
+      return {
+        label: ds.name.length > 14 ? ds.name.slice(0, 12) + "…" : ds.name,
+        kwh: +s.annualKwh.toFixed(0),
+        cost: +s.totalCost.toFixed(0)
+      };
+    });
+  }, [datasets, type, scale, levers, tariff]);
 
   // Amortisationsrechnung: Referenzsimulation ohne Batterie (sonst identisch),
   // um die tatsächlich der Batterie zurechenbare Einsparung zu isolieren.
@@ -2206,9 +2255,15 @@ function StromtarifCockpit() {
       fontSize: 11,
       textTransform: "uppercase",
       color: "#8A938E",
-      marginBottom: 12
+      marginBottom: 4
     }
-  }, "Datenquelle Grundlast"), /*#__PURE__*/React.createElement("button", {
+  }, "Datenquelle Grundlast"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "#5A6360",
+      marginBottom: 10
+    }
+  }, "Mehrere Dateien möglich — z.B. je ein Lastprofil pro Jahr, um die Entwicklung über die Zeit zu vergleichen."), /*#__PURE__*/React.createElement("button", {
     onClick: () => fileRef.current.click(),
     style: {
       width: "100%",
@@ -2223,122 +2278,148 @@ function StromtarifCockpit() {
       color: "#8A938E",
       background: "transparent"
     }
-  }, "📤 Lastprofil hochladen (.xlsx, .xls oder .csv)"), /*#__PURE__*/React.createElement("input", {
+  }, "📤 Lastprofil(e) hochladen (.xlsx, .xls, .csv)"), /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: ".csv,.xlsx,.xls",
+    multiple: true,
     style: {
       display: "none"
     },
     onChange: handleCSV
-  }), csvName && /*#__PURE__*/React.createElement("div", {
+  }), uploadError && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#4FA88C",
-      marginTop: 6
+      color: "#D9705A",
+      marginTop: 8
     }
-  }, "Aktiv: ", csvName, " (", csvBase.length, " Werte)"), csvBase && /*#__PURE__*/React.createElement("div", {
+  }, uploadError), datasets.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: 10
+      marginTop: 12,
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, datasets.map(ds => /*#__PURE__*/React.createElement("div", {
+    key: ds.id,
+    style: {
+      borderRadius: 10,
+      padding: 10,
+      border: `1px solid ${ds.id === activeDatasetId ? "#4FA88C" : "#2E3634"}`,
+      backgroundColor: ds.id === activeDatasetId ? "#1A2420" : "#181D1F"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
-      color: "#8A938E",
-      marginBottom: 4
-    }
-  }, "Einheit der hochgeladenen Werte (wichtig für korrekte Berechnung!):"), /*#__PURE__*/React.createElement("div", {
-    style: {
       display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: 6
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setCsvUnit("kW"),
+    onClick: () => setActiveDatasetId(ds.id),
     style: {
       flex: 1,
+      textAlign: "left",
+      background: "transparent",
+      border: "none",
+      padding: 0,
       fontSize: 12,
-      padding: "6px 0",
-      borderRadius: 10,
-      border: `1px solid ${csvUnit === "kW" ? "#E8A33D" : "#2E3634"}`,
-      color: csvUnit === "kW" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: csvUnit === "kW" ? "#2A2419" : "transparent"
+      color: ds.id === activeDatasetId ? "#EDEDE9" : "#8A938E",
+      fontWeight: ds.id === activeDatasetId ? 600 : 400
+    }
+  }, ds.id === activeDatasetId ? "● " : "○ ", ds.name, " ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "#5A6360"
+    }
+  }, "(", ds.values.length, " Werte)")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => removeDataset(ds.id),
+    title: "Entfernen",
+    style: {
+      background: "transparent",
+      border: "none",
+      color: "#8A938E",
+      fontSize: 13,
+      padding: "0 4px"
+    }
+  }, "✕")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => updateDataset(ds.id, {
+      unit: "kW"
+    }),
+    style: {
+      flex: 1,
+      fontSize: 11,
+      padding: "5px 0",
+      borderRadius: 8,
+      border: `1px solid ${ds.unit === "kW" ? "#E8A33D" : "#2E3634"}`,
+      color: ds.unit === "kW" ? "#EDEDE9" : "#8A938E",
+      backgroundColor: ds.unit === "kW" ? "#2A2419" : "transparent"
     }
   }, "kW (Leistung)"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setCsvUnit("kWh"),
+    onClick: () => updateDataset(ds.id, {
+      unit: "kWh"
+    }),
     style: {
       flex: 1,
-      fontSize: 12,
-      padding: "6px 0",
-      borderRadius: 10,
-      border: `1px solid ${csvUnit === "kWh" ? "#E8A33D" : "#2E3634"}`,
-      color: csvUnit === "kWh" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: csvUnit === "kWh" ? "#2A2419" : "transparent"
+      fontSize: 11,
+      padding: "5px 0",
+      borderRadius: 8,
+      border: `1px solid ${ds.unit === "kWh" ? "#E8A33D" : "#2E3634"}`,
+      color: ds.unit === "kWh" ? "#EDEDE9" : "#8A938E",
+      backgroundColor: ds.unit === "kWh" ? "#2A2419" : "transparent"
     }
-  }, "kWh (Energie/Intervall)")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "#5A6360",
-      marginTop: 4
-    }
-  }, "Netzbetreiber-Exporte (z.B. \"Wirkleistung [kW]\") sind fast immer kW — dann hier \"kW\" wählen, damit korrekt mit 0.25h auf Energie pro 15-Min-Intervall umgerechnet wird.")), csvInfo && csvInfo.numericCandidates > 1 && /*#__PURE__*/React.createElement("div", {
+  }, "kWh (Energie)")), ds.info && ds.info.numericCandidates > 1 && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 10,
       color: "#8A938E",
-      marginBottom: 4
+      marginBottom: 3
     }
-  }, "Datei enthält mehrere mögliche Messreihen (", csvInfo.numericCandidates, " Spalten) — automatisch gewählt: Spalte ", csvInfo.usedColumn + 1, ". Falls falsch, hier korrigieren:"), /*#__PURE__*/React.createElement("select", {
-    value: csvInfo.usedColumn,
-    onChange: e => handleColumnChange(parseInt(e.target.value)),
+  }, "Mehrere Messreihen erkannt — Spalte ", ds.info.usedColumn + 1, " gewählt, falls falsch:"), /*#__PURE__*/React.createElement("select", {
+    value: ds.info.usedColumn,
+    onChange: e => handleColumnChange(ds.id, parseInt(e.target.value)),
     style: {
       width: "100%",
-      fontSize: 12,
-      padding: "6px 8px",
-      borderRadius: 10,
+      fontSize: 11,
+      padding: "5px 6px",
+      borderRadius: 8,
       background: "#14181A",
       border: "1px solid #2E3634",
       color: "#EDEDE9"
     }
   }, Array.from({
-    length: csvInfo.columns
+    length: ds.info.columns
   }, (_, i) => /*#__PURE__*/React.createElement("option", {
     key: i,
     value: i
-  }, "Spalte ", i + 1)))), uploadError && /*#__PURE__*/React.createElement("div", {
+  }, "Spalte ", i + 1)))))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setActiveDatasetId(null),
     style: {
       fontSize: 11,
-      color: "#D9705A",
-      marginTop: 6
-    }
-  }, uploadError), csvBase && /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setCsvBase(null);
-      setCsvName(null);
-      setCsvRawText(null);
-      setCsvRawBuffer(null);
-      setCsvInfo(null);
-    },
-    style: {
-      fontSize: 11,
-      marginTop: 8,
       textDecoration: "underline",
       color: "#8A938E",
       background: "transparent",
       border: "none",
-      padding: 0
+      padding: 0,
+      textAlign: "left"
     }
-  }, "Synthetisches Profil verwenden"), /*#__PURE__*/React.createElement("div", {
+  }, "Synthetisches Profil verwenden (kein Datensatz aktiv)")), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "#5A6360",
-      marginTop: 8,
+      marginTop: 10,
       display: "flex",
       gap: 4
     }
-  }, /*#__PURE__*/React.createElement("span", null, "ℹ️"), /*#__PURE__*/React.createElement("span", null, "Ohne Upload wird ein synthetisches 15-Min-Profil je Objekttyp erzeugt. Das Lastprofil ersetzt nur die Grundlast — Hebel werden weiterhin addiert/subtrahiert."))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "ℹ️"), /*#__PURE__*/React.createElement("span", null, "Ohne aktiven Datensatz wird ein synthetisches 15-Min-Profil je Objekttyp erzeugt. Das Lastprofil ersetzt nur die Grundlast — Hebel werden weiterhin addiert/subtrahiert."))), /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 14,
       padding: 16,
@@ -2587,7 +2668,7 @@ function StromtarifCockpit() {
       fontSize: 14,
       fontWeight: 500
     }
-  }, "Tagesprofil — ", csvBase ? `Datentag ${dayIdx % Math.max(1, Math.floor(csvBase.length / STEPS_PER_DAY))}` : `Tag ${dayIdx} / 365`), /*#__PURE__*/React.createElement("div", {
+  }, "Tagesprofil — ", activeDataset ? `Datentag ${dayIdx % Math.max(1, Math.floor(activeDataset.values.length / STEPS_PER_DAY))} (${activeDataset.name})` : `Tag ${dayIdx} / 365`), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -2751,6 +2832,30 @@ function StromtarifCockpit() {
     }
   }, "Monatlicher Netzbezug [kWh] vs. Stromkosten [CHF] — zeigt, ob Kosten proportional zum Verbrauch verlaufen oder z.B. durch Tarifstruktur/Leistungsspitzen davon abweichen"), /*#__PURE__*/React.createElement(CostVsConsumptionChart, {
     data: costVsConsumption
+  })), multiYearComparison && /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 20,
+      backgroundColor: "#1D2321",
+      border: "1px solid #2E3634",
+      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stc-display",
+    style: {
+      fontSize: 14,
+      fontWeight: 500,
+      marginBottom: 2
+    }
+  }, "📈 Mehrjahresvergleich"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#8A938E",
+      marginBottom: 10
+    }
+  }, "Jahresverbrauch & -kosten je hochgeladenem Datensatz, alle mit den aktuellen Hebel- und Tarifeinstellungen berechnet — zeigt die Entwicklung über mehrere Jahre/Datensätze hinweg."), /*#__PURE__*/React.createElement(CostVsConsumptionChart, {
+    data: multiYearComparison
   })), /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 14,
