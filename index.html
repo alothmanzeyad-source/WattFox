@@ -14,15 +14,42 @@
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #14181A; color: #EDEDE9; font-family: Inter, Arial, sans-serif; }
-  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #2E3634; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #E8A33D; cursor: pointer; margin-top: -5px; }
-  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #E8A33D; border: none; cursor: pointer; }
+  html, body { margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; }
+
+  .stromtarif-cockpit-root {
+    --stc-bg: #14181A; --stc-panel: #1D2321; --stc-panel-2: #181D1F;
+    --stc-panel-info: #1A2420; --stc-border-info: #2E4A3E;
+    --stc-panel-warm: #241D14; --stc-border-warm: #4A3A1F;
+    --stc-active-bg: #2A2A1A; --stc-border: #2E3634; --stc-border-soft: #3A423F;
+    --stc-text: #EDEDE9; --stc-muted: #8A938E; --stc-muted-2: #5A6360;
+    --stc-amber: #E8A33D; --stc-teal: #4FA88C;
+    background: var(--stc-bg); color: var(--stc-text);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: block; min-height: 100vh;
+  }
+  .stromtarif-cockpit-root[data-theme="light"] {
+    --stc-bg: #F5F4F0; --stc-panel: #FFFFFF; --stc-panel-2: #F0EEE8;
+    --stc-panel-info: #E7F3EE; --stc-border-info: #BFE0D2;
+    --stc-panel-warm: #FDF1DD; --stc-border-warm: #F0D9A8;
+    --stc-active-bg: #FBEFD2; --stc-border: #E2DFD6; --stc-border-soft: #D3CFC2;
+    --stc-text: #22201B; --stc-muted: #6B6F68; --stc-muted-2: #94978F;
+  }
+  html, body { background: #14181A; }
+
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--stc-border); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--stc-amber); cursor: pointer; margin-top: -5px; }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--stc-amber); border: none; cursor: pointer; }
+  select { color-scheme: dark; }
+  .stromtarif-cockpit-root[data-theme="light"] select { color-scheme: light; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #2E3634; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--stc-border); border-radius: 4px; }
   button { font-family: inherit; cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease; }
   button:hover { filter: brightness(1.08); }
   button:active { transform: scale(0.98); }
+  select, textarea { transition: border-color 0.15s ease; }
+  input[type=color] { -webkit-appearance: none; border: none; padding: 0; width: 32px; height: 32px; border-radius: 8px; overflow: hidden; cursor: pointer; background: transparent; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: 1px solid var(--stc-border); border-radius: 8px; }
   .stc-mono { font-family: "IBM Plex Mono", monospace; }
   .stc-display { font-family: "Space Grotesk", sans-serif; }
 
@@ -374,6 +401,92 @@ const DAYS = 365;
 
 // Name/Branding-Zeile, die im Cockpit-Header angezeigt wird — hier eintragen:
 const OWNER_NAME = "Zeyad Al Othman";
+
+// ---------------------------------------------------------------------------
+// Theme-System: Dunkel / Hell / Benutzerdefiniert
+// ---------------------------------------------------------------------------
+const THEME_DARK = {
+  "--stc-bg": "#14181A",
+  "--stc-panel": "#1D2321",
+  "--stc-panel-2": "#181D1F",
+  "--stc-panel-info": "#1A2420",
+  "--stc-border-info": "#2E4A3E",
+  "--stc-panel-warm": "#241D14",
+  "--stc-border-warm": "#4A3A1F",
+  "--stc-active-bg": "#2A2A1A",
+  "--stc-border": "#2E3634",
+  "--stc-border-soft": "#3A423F",
+  "--stc-text": "#EDEDE9",
+  "--stc-muted": "#8A938E",
+  "--stc-muted-2": "#5A6360",
+  "--stc-amber": "#E8A33D",
+  "--stc-teal": "#4FA88C"
+};
+const THEME_LIGHT = {
+  "--stc-bg": "#F5F4F0",
+  "--stc-panel": "#FFFFFF",
+  "--stc-panel-2": "#F0EEE8",
+  "--stc-panel-info": "#E7F3EE",
+  "--stc-border-info": "#BFE0D2",
+  "--stc-panel-warm": "#FDF1DD",
+  "--stc-border-warm": "#F0D9A8",
+  "--stc-active-bg": "#FBEFD2",
+  "--stc-border": "#E2DFD6",
+  "--stc-border-soft": "#D3CFC2",
+  "--stc-text": "#22201B",
+  "--stc-muted": "#6B6F68",
+  "--stc-muted-2": "#94978F",
+  "--stc-amber": "#C97F1F",
+  "--stc-teal": "#2F8A6E"
+};
+function hexToRgb(hex) {
+  const h = hex.replace("#", "");
+  const v = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const num = parseInt(v, 16);
+  return {
+    r: num >> 16 & 255,
+    g: num >> 8 & 255,
+    b: num & 255
+  };
+}
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+function mixColors(hex1, hex2, t) {
+  const a = hexToRgb(hex1),
+    b = hexToRgb(hex2);
+  return rgbToHex(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t);
+}
+
+// Leitet aus wenigen Basisfarben (Hintergrund, Fläche, Text, 2 Akzente) das
+// komplette Variablenset ab — hält "Benutzerdefiniert" einfach bedienbar,
+// ohne dass man 15 Einzelfarben von Hand abstimmen muss.
+function deriveCustomTheme(c) {
+  return {
+    "--stc-bg": c.bg,
+    "--stc-panel": c.panel,
+    "--stc-panel-2": mixColors(c.panel, c.bg, 0.4),
+    "--stc-panel-info": mixColors(c.panel, c.accent2, 0.16),
+    "--stc-border-info": mixColors(c.panel, c.accent2, 0.4),
+    "--stc-panel-warm": mixColors(c.panel, c.accent, 0.16),
+    "--stc-border-warm": mixColors(c.panel, c.accent, 0.4),
+    "--stc-active-bg": mixColors(c.panel, c.accent, 0.18),
+    "--stc-border": mixColors(c.panel, c.text, 0.14),
+    "--stc-border-soft": mixColors(c.panel, c.text, 0.22),
+    "--stc-text": c.text,
+    "--stc-muted": mixColors(c.text, c.panel, 0.45),
+    "--stc-muted-2": mixColors(c.text, c.panel, 0.68),
+    "--stc-amber": c.accent,
+    "--stc-teal": c.accent2
+  };
+}
+const DEFAULT_CUSTOM_COLORS = {
+  bg: "#14181A",
+  panel: "#1D2321",
+  text: "#EDEDE9",
+  accent: "#E8A33D",
+  accent2: "#4FA88C"
+};
 const BUILDING_TYPES = {
   EFH: {
     label: "Einfamilienhaus",
@@ -1211,7 +1324,7 @@ function StackedDayChart({
     x2: width - margin.right,
     y1: margin.top + h * f,
     y2: margin.top + h * f,
-    stroke: "#2E3634",
+    stroke: "var(--stc-border)",
     strokeDasharray: "3 3"
   })), /*#__PURE__*/React.createElement("path", {
     d: pvPath,
@@ -1240,19 +1353,19 @@ function StackedDayChart({
     x2: width - margin.right,
     y1: yZero,
     y2: yZero,
-    stroke: "#3A423F"
+    stroke: "var(--stc-border-soft)"
   }), xTicks.map(i => /*#__PURE__*/React.createElement("text", {
     key: i,
     x: x(i),
     y: height - 4,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle"
   }, data[i]?.t)), /*#__PURE__*/React.createElement("text", {
     x: 4,
     y: margin.top + 8,
     fontSize: "9",
-    fill: "#8A938E"
+    fill: "var(--stc-muted)"
   }, "kWh/15min"));
 }
 
@@ -1295,7 +1408,7 @@ function CostVsConsumptionChart({
     x2: width - margin.right,
     y1: margin.top + h * f,
     y2: margin.top + h * f,
-    stroke: "#2E3634",
+    stroke: "var(--stc-border)",
     strokeDasharray: "3 3"
   })), data.map((d, i) => {
     const bx = margin.left + i * (bw + gap) + gap / 2;
@@ -1337,7 +1450,7 @@ function CostVsConsumptionChart({
     x: margin.left + i * (bw + gap) + gap / 2 + bw / 2,
     y: height - 6,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle"
   }, d.label)), /*#__PURE__*/React.createElement("text", {
     x: 4,
@@ -1352,7 +1465,7 @@ function CostVsConsumptionChart({
   }, "CHF")), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginTop: 6,
       display: "flex",
       justifyContent: "space-between"
@@ -1397,7 +1510,7 @@ function MonthlyBarChart({
     x2: width - margin.right,
     y1: margin.top + h * f,
     y2: margin.top + h * f,
-    stroke: "#2E3634",
+    stroke: "var(--stc-border)",
     strokeDasharray: "3 3"
   })), data.map((d, i) => {
     const bx = margin.left + i * (bw + gap) + gap / 2;
@@ -1422,14 +1535,14 @@ function MonthlyBarChart({
       x: bx + bw / 2,
       y: height - 6,
       fontSize: "9",
-      fill: "#8A938E",
+      fill: "var(--stc-muted)",
       textAnchor: "middle"
     }, d.monat));
   }), /*#__PURE__*/React.createElement("text", {
     x: 4,
     y: margin.top + 8,
     fontSize: "9",
-    fill: "#8A938E"
+    fill: "var(--stc-muted)"
   }, "CHF"));
 }
 function DurationLineChart({
@@ -1462,7 +1575,7 @@ function DurationLineChart({
     x2: width - margin.right,
     y1: margin.top + h * f,
     y2: margin.top + h * f,
-    stroke: "#2E3634",
+    stroke: "var(--stc-border)",
     strokeDasharray: "3 3"
   })), /*#__PURE__*/React.createElement("polyline", {
     points: points,
@@ -1473,12 +1586,12 @@ function DurationLineChart({
     x: 4,
     y: margin.top + 8,
     fontSize: "9",
-    fill: "#8A938E"
+    fill: "var(--stc-muted)"
   }, "kW"), /*#__PURE__*/React.createElement("text", {
     x: margin.left + w / 2,
     y: height - 4,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle"
   }, "15-Min-Intervalle (sortiert)"));
 }
@@ -1538,7 +1651,7 @@ function PaybackChart({
     x2: width - margin.right,
     y1: margin.top + h * f,
     y2: margin.top + h * f,
-    stroke: "#2E3634",
+    stroke: "var(--stc-border)",
     strokeDasharray: "3 3"
   })), /*#__PURE__*/React.createElement("line", {
     x1: margin.left,
@@ -1579,13 +1692,13 @@ function PaybackChart({
     x: x(yr),
     y: height - 6,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle"
   }, yr)), /*#__PURE__*/React.createElement("text", {
     x: margin.left + w / 2,
     y: height + 2,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle",
     style: {
       display: "none"
@@ -1594,7 +1707,7 @@ function PaybackChart({
     x: 4,
     y: margin.top + 8,
     fontSize: "9",
-    fill: "#8A938E"
+    fill: "var(--stc-muted)"
   }, "CHF"));
 }
 function MiniSparkline({
@@ -1671,7 +1784,7 @@ function TariffScheduleStrip({
       display: "flex",
       justifyContent: "space-between",
       fontSize: 8,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginTop: 2
     }
   }, /*#__PURE__*/React.createElement("span", null, "0h"), /*#__PURE__*/React.createElement("span", null, "6h"), /*#__PURE__*/React.createElement("span", null, "12h"), /*#__PURE__*/React.createElement("span", null, "18h"), /*#__PURE__*/React.createElement("span", null, "24h")));
@@ -1696,14 +1809,14 @@ function WeatherDayCards({
         borderRadius: 10,
         padding: "8px 4px",
         textAlign: "center",
-        backgroundColor: i === 0 ? "#20302A" : "#181D1F",
-        border: `1px solid ${i === 0 ? "#4FA88C" : "#2E3634"}`
+        backgroundColor: i === 0 ? "var(--stc-active-bg)" : "var(--stc-panel-2)",
+        border: `1px solid ${i === 0 ? "#4FA88C" : "var(--stc-border)"}`
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "stc-mono",
       style: {
         fontSize: 9,
-        color: i === 0 ? "#4FA88C" : "#8A938E",
+        color: i === 0 ? "#4FA88C" : "var(--stc-muted)",
         fontWeight: 600
       }
     }, i === 0 ? "HEUTE" : wd), /*#__PURE__*/React.createElement("div", {
@@ -1737,12 +1850,12 @@ function WeatherDayCards({
     }, d.kwhPerKwp), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 8,
-        color: "#5A6360"
+        color: "var(--stc-muted-2)"
       }
     }, "kWh/kWp"), d.maxTemp !== null && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 9,
-        color: "#8A938E",
+        color: "var(--stc-muted)",
         marginTop: 3
       }
     }, d.maxTemp, "° / ", d.minTemp, "°"));
@@ -1796,14 +1909,14 @@ function LoadHeatmap({
     x: margin.left - 6,
     y: margin.top + r * ch + ch / 2 + 3,
     fontSize: "10",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "end"
   }, lab)), hourTicks.map(c => /*#__PURE__*/React.createElement("text", {
     key: c,
     x: margin.left + c * cw,
     y: height - 6,
     fontSize: "9",
-    fill: "#8A938E",
+    fill: "var(--stc-muted)",
     textAnchor: "middle"
   }, timeLabel(c)))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1815,7 +1928,7 @@ function LoadHeatmap({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, hover ? `${WEEKDAY_LABELS[hover.r]} ${timeLabel(hover.c)} Uhr — ${hover.v.toFixed(1)} kW` : "Zelle berühren für Details"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1826,7 +1939,7 @@ function LoadHeatmap({
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "0 kW"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1838,7 +1951,7 @@ function LoadHeatmap({
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, fmt0(maxVal), " kW"))));
 }
@@ -1861,7 +1974,7 @@ function Toggle({
       alignItems: "center",
       borderRadius: 999,
       border: "none",
-      backgroundColor: checked ? color : "#3A423F",
+      backgroundColor: checked ? color : "var(--stc-border-soft)",
       flexShrink: 0,
       padding: 0
     }
@@ -1891,8 +2004,8 @@ function LeverButton({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 14,
-      border: `1px solid ${active ? color : "#2E3634"}`,
-      backgroundColor: "#1D2321",
+      border: `1px solid ${active ? color : "var(--stc-border)"}`,
+      backgroundColor: "var(--stc-panel)",
       padding: 12,
       marginBottom: 12
     }
@@ -1904,7 +2017,7 @@ function LeverButton({
       alignItems: "center",
       justifyContent: "space-between",
       background: active ? `${color}22` : "transparent",
-      border: `1px solid ${active ? color : "#3A423F"}`,
+      border: `1px solid ${active ? color : "var(--stc-border-soft)"}`,
       borderRadius: 10,
       padding: "10px 14px"
     }
@@ -1923,14 +2036,14 @@ function LeverButton({
     style: {
       fontSize: 14,
       fontWeight: 500,
-      color: "#EDEDE9"
+      color: "var(--stc-text)"
     }
   }, title)), /*#__PURE__*/React.createElement("span", {
     className: "stc-mono",
     style: {
       fontSize: 11,
       fontWeight: 600,
-      color: active ? color : "#8A938E"
+      color: active ? color : "var(--stc-muted)"
     }
   }, active ? "● AN" : "○ AUS")), active && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1956,7 +2069,7 @@ function SliderRow({
       display: "flex",
       justifyContent: "space-between",
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, /*#__PURE__*/React.createElement("span", null, label), /*#__PURE__*/React.createElement("span", null, value, " ", unit)), /*#__PURE__*/React.createElement("input", {
@@ -1980,15 +2093,15 @@ function KPI({
       padding: 14,
       flex: "1 1 140px",
       minWidth: 140,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, label), /*#__PURE__*/React.createElement("div", {
@@ -1996,13 +2109,13 @@ function KPI({
     style: {
       fontSize: 22,
       fontWeight: 600,
-      color: color || "#EDEDE9"
+      color: color || "var(--stc-text)"
     }
   }, value, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 13,
       marginLeft: 4,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, unit)));
 }
@@ -2072,6 +2185,9 @@ function StromtarifCockpit() {
   const [weatherForecast, setWeatherForecast] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(null);
+  const [themeMode, setThemeMode] = useState("dark"); // "dark" | "light" | "custom"
+  const [customColors, setCustomColors] = useState(DEFAULT_CUSTOM_COLORS);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [heatMode, setHeatMode] = useState("max");
   const [uploadError, setUploadError] = useState(null);
   const bt = BUILDING_TYPES[type];
@@ -2214,7 +2330,7 @@ function StromtarifCockpit() {
         startHour: 0,
         endHour: 24,
         scope: "all",
-        color: "#8A938E"
+        color: "var(--stc-muted)"
       }];
     }
     if (tariffMode === "dynamisch") {
@@ -2366,12 +2482,25 @@ function StromtarifCockpit() {
       sdlRevenue
     };
   }, [levers, tariff, effectiveTariffTiers, csvBaseKwh, type, scale, sim.totalCost, effectiveForecastFactor]);
+  const containerRef = useRef(null);
+  const activeThemeVars = useMemo(() => {
+    if (themeMode === "light") return THEME_LIGHT;
+    if (themeMode === "custom") return deriveCustomTheme(customColors);
+    return THEME_DARK;
+  }, [themeMode, customColors]);
+  const isLightLike = themeMode === "light" || themeMode === "custom" && hexToRgb(customColors.bg).r + hexToRgb(customColors.bg).g + hexToRgb(customColors.bg).b > 420;
+  React.useEffect(() => {
+    const root = containerRef.current && containerRef.current.parentElement;
+    if (root) root.setAttribute("data-theme", isLightLike ? "light" : "dark");
+  }, [isLightLike]);
   return /*#__PURE__*/React.createElement("div", {
+    ref: containerRef,
     style: {
-      background: "radial-gradient(circle at 15% 0%, #1B211F 0%, #14181A 55%)",
+      background: "radial-gradient(circle at 15% 0%, var(--stc-panel) 0%, var(--stc-bg) 55%)",
       minHeight: "100vh",
       padding: "20px 16px 60px",
-      borderRadius: 12
+      borderRadius: 12,
+      ...activeThemeVars
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2412,26 +2541,103 @@ function StromtarifCockpit() {
   }, "🦊 WattFox"), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 14,
-      color: "#A3ACA8",
+      color: "var(--stc-muted)",
       marginTop: 8,
       maxWidth: 640,
       lineHeight: 1.5
     }
-  }, "Simuliere in Echtzeit, wie sich Photovoltaik, Batteriespeicher, Wärmepumpe & Co. auf deine Stromkosten auswirken — verändere links die Regler und sieh sofort, was rechts passiert.")), OWNER_NAME && /*#__PURE__*/React.createElement("div", {
+  }, "Simuliere in Echtzeit, wie sich Photovoltaik, Batteriespeicher, Wärmepumpe & Co. auf deine Stromkosten auswirken — verändere links die Regler und sieh sofort, was rechts passiert.")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 4,
+      borderRadius: 10,
+      padding: 4,
+      backgroundColor: "var(--stc-panel-2)",
+      border: "1px solid var(--stc-border)"
+    }
+  }, [{
+    key: "dark",
+    icon: "🌙",
+    label: "Dunkel"
+  }, {
+    key: "light",
+    icon: "☀️",
+    label: "Hell"
+  }, {
+    key: "custom",
+    icon: "🎨",
+    label: "Eigen"
+  }].map(opt => /*#__PURE__*/React.createElement("button", {
+    key: opt.key,
+    onClick: () => setThemeMode(opt.key),
+    title: opt.label,
+    style: {
+      fontSize: 11,
+      padding: "6px 9px",
+      borderRadius: 7,
+      border: "none",
+      color: themeMode === opt.key ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: themeMode === opt.key ? "var(--stc-active-bg)" : "transparent"
+    }
+  }, opt.icon, " ", opt.label))), themeMode === "custom" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      alignItems: "center",
+      flexWrap: "wrap",
+      justifyContent: "flex-end"
+    }
+  }, [{
+    key: "bg",
+    label: "Hintergrund"
+  }, {
+    key: "panel",
+    label: "Fläche"
+  }, {
+    key: "text",
+    label: "Text"
+  }, {
+    key: "accent",
+    label: "Akzent 1"
+  }, {
+    key: "accent2",
+    label: "Akzent 2"
+  }].map(c => /*#__PURE__*/React.createElement("div", {
+    key: c.key,
+    title: c.label,
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 2
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "color",
+    value: customColors[c.key],
+    onChange: e => setCustomColors(p => ({
+      ...p,
+      [c.key]: e.target.value
+    }))
+  })))), OWNER_NAME && /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 12,
-      color: "#8A938E",
-      textAlign: "right",
-      paddingTop: 4
+      color: "var(--stc-muted)"
     }
-  }, OWNER_NAME)), /*#__PURE__*/React.createElement("div", {
+  }, OWNER_NAME))), /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 14,
       padding: 18,
       marginBottom: 24,
-      backgroundColor: "#1A2420",
-      border: "1px solid #2E4A3E",
+      backgroundColor: "var(--stc-panel-info)",
+      border: "1px solid var(--stc-border-info)",
       boxShadow: "0 4px 24px rgba(0,0,0,0.3)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2454,12 +2660,12 @@ function StromtarifCockpit() {
   }, "⚡ Live-Cockpit"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, activeScenario ? `Szenario: ${SCENARIOS.find(s => s.key === activeScenario)?.icon} ${SCENARIOS.find(s => s.key === activeScenario)?.label}` : `Vorschautag ${dayIdx} / 365`)), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 14
     }
   }, "Sonneneinstrahlung, Preissignal und Lastgang reagieren live auf jede Änderung links."), /*#__PURE__*/React.createElement("div", {
@@ -2473,7 +2679,7 @@ function StromtarifCockpit() {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "☀️ Sonneneinstrahlung"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -2485,13 +2691,13 @@ function StromtarifCockpit() {
   }, fmt1(previewIrradiance), " ", /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "kWh/kWp"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "💶 Preis um 12:00"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -2503,13 +2709,13 @@ function StromtarifCockpit() {
   }, fmt1(priceNow.price), " ", /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Rp/kWh"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "📉 Netzbezug-Spitze"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -2521,13 +2727,13 @@ function StromtarifCockpit() {
   }, fmt1(Math.max(0, ...dayData.map(d => d.Netzbezug)) * 4), " ", /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "kW"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "🔆 PV-Ertrag heute"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -2539,13 +2745,13 @@ function StromtarifCockpit() {
   }, fmt1(dayData.reduce((a, d) => a - d.PV, 0)), " ", /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "kWh"))), levers.battery && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "🔋 Batterie-SoC"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -2557,13 +2763,13 @@ function StromtarifCockpit() {
   }, fmt0(Math.min(...dayData.map(d => d.BatterieSoC))), "–", fmt0(Math.max(...dayData.map(d => d.BatterieSoC))), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "%"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Aktive Trigger"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2579,7 +2785,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 3
     }
   }, "📉 Lastgang (Netzbezug, heute)"), /*#__PURE__*/React.createElement(MiniSparkline, {
@@ -2589,7 +2795,7 @@ function StromtarifCockpit() {
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 3
     }
   }, "💶 Preisverlauf (heute)"), /*#__PURE__*/React.createElement(MiniSparkline, {
@@ -2599,7 +2805,7 @@ function StromtarifCockpit() {
   })), levers.battery && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 3
     }
   }, "🔋 Batterie-Ladezustand (heute)"), /*#__PURE__*/React.createElement(MiniSparkline, {
@@ -2616,8 +2822,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#241D14",
-      border: "1px solid #4A3A1F",
+      backgroundColor: "var(--stc-panel-warm)",
+      border: "1px solid var(--stc-border-warm)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2631,7 +2837,7 @@ function StromtarifCockpit() {
   }, "🎬 Szenarien — Schnellstart"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 10
     }
   }, "Ein Klick stellt Wetter, Tarif ", /*#__PURE__*/React.createElement("strong", null, "und"), " passende Hebel (PV, Wärmepumpe, Speicher) realistisch ein — ideal für Kundengespräche."), /*#__PURE__*/React.createElement("div", {
@@ -2648,9 +2854,9 @@ function StromtarifCockpit() {
       padding: "10px 12px",
       borderRadius: 10,
       textAlign: "left",
-      border: `1px solid ${activeScenario === sc.key ? "#E8A33D" : "#3A2E1A"}`,
-      color: activeScenario === sc.key ? "#EDEDE9" : "#C9BBA0",
-      backgroundColor: activeScenario === sc.key ? "#2E2113" : "#1D1710"
+      border: `1px solid ${activeScenario === sc.key ? "#E8A33D" : "var(--stc-border-warm)"}`,
+      color: activeScenario === sc.key ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: activeScenario === sc.key ? "var(--stc-active-bg)" : "var(--stc-panel-2)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2659,7 +2865,7 @@ function StromtarifCockpit() {
   }, sc.icon, " ", sc.label), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginTop: 2,
       fontWeight: 400
     }
@@ -2669,7 +2875,7 @@ function StromtarifCockpit() {
       fontSize: 11,
       marginTop: 10,
       textDecoration: "underline",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       background: "transparent",
       border: "none",
       padding: 0
@@ -2679,8 +2885,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2688,7 +2894,7 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 12
     }
   }, "1 · Objekttyp"), /*#__PURE__*/React.createElement("div", {
@@ -2710,9 +2916,9 @@ function StromtarifCockpit() {
         borderRadius: 10,
         padding: "10px 4px",
         fontSize: 12,
-        backgroundColor: active ? "#2A322E" : "transparent",
-        border: `1px solid ${active ? "#4FA88C" : "#2E3634"}`,
-        color: active ? "#EDEDE9" : "#8A938E"
+        backgroundColor: active ? "var(--stc-active-bg)" : "transparent",
+        border: `1px solid ${active ? "#4FA88C" : "var(--stc-border)"}`,
+        color: active ? "var(--stc-text)" : "var(--stc-muted)"
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
@@ -2734,7 +2940,7 @@ function StromtarifCockpit() {
   })), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginTop: 6
     }
   }, "Referenzverbrauch: ≈ ", fmt0(bt.kwhPerUnit * scale), " kWh/Jahr")), /*#__PURE__*/React.createElement("div", {
@@ -2742,8 +2948,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2751,13 +2957,13 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "2 · Datenquelle Grundlast"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 10
     }
   }, "Mehrere Dateien möglich — z.B. je ein Lastprofil pro Jahr, um die Entwicklung über die Zeit zu vergleichen."), /*#__PURE__*/React.createElement("button", {
@@ -2771,8 +2977,8 @@ function StromtarifCockpit() {
       borderRadius: 10,
       padding: "10px 0",
       fontSize: 12,
-      border: "1px dashed #3A423F",
-      color: "#8A938E",
+      border: "1px dashed var(--stc-border-soft)",
+      color: "var(--stc-muted)",
       background: "transparent"
     }
   }, "📤 Lastprofil(e) hochladen (.xlsx, .xls, .csv)"), /*#__PURE__*/React.createElement("input", {
@@ -2802,8 +3008,8 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 10,
       padding: 10,
-      border: `1px solid ${ds.id === activeDatasetId ? "#4FA88C" : "#2E3634"}`,
-      backgroundColor: ds.id === activeDatasetId ? "#1A2420" : "#181D1F"
+      border: `1px solid ${ds.id === activeDatasetId ? "#4FA88C" : "var(--stc-border)"}`,
+      backgroundColor: ds.id === activeDatasetId ? "var(--stc-panel-info)" : "var(--stc-panel-2)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2821,12 +3027,12 @@ function StromtarifCockpit() {
       border: "none",
       padding: 0,
       fontSize: 12,
-      color: ds.id === activeDatasetId ? "#EDEDE9" : "#8A938E",
+      color: ds.id === activeDatasetId ? "var(--stc-text)" : "var(--stc-muted)",
       fontWeight: ds.id === activeDatasetId ? 600 : 400
     }
   }, ds.id === activeDatasetId ? "● " : "○ ", ds.name, " ", /*#__PURE__*/React.createElement("span", {
     style: {
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "(", ds.values.length, " Werte)")), /*#__PURE__*/React.createElement("button", {
     onClick: () => removeDataset(ds.id),
@@ -2834,7 +3040,7 @@ function StromtarifCockpit() {
     style: {
       background: "transparent",
       border: "none",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       fontSize: 13,
       padding: "0 4px"
     }
@@ -2853,9 +3059,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 0",
       borderRadius: 8,
-      border: `1px solid ${ds.unit === "kW" ? "#E8A33D" : "#2E3634"}`,
-      color: ds.unit === "kW" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: ds.unit === "kW" ? "#2A2419" : "transparent"
+      border: `1px solid ${ds.unit === "kW" ? "#E8A33D" : "var(--stc-border)"}`,
+      color: ds.unit === "kW" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: ds.unit === "kW" ? "var(--stc-active-bg)" : "transparent"
     }
   }, "kW (Leistung)"), /*#__PURE__*/React.createElement("button", {
     onClick: () => updateDataset(ds.id, {
@@ -2866,9 +3072,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 0",
       borderRadius: 8,
-      border: `1px solid ${ds.unit === "kWh" ? "#E8A33D" : "#2E3634"}`,
-      color: ds.unit === "kWh" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: ds.unit === "kWh" ? "#2A2419" : "transparent"
+      border: `1px solid ${ds.unit === "kWh" ? "#E8A33D" : "var(--stc-border)"}`,
+      color: ds.unit === "kWh" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: ds.unit === "kWh" ? "var(--stc-active-bg)" : "transparent"
     }
   }, "kWh (Energie)")), ds.info && ds.info.numericCandidates > 1 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2877,7 +3083,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 3
     }
   }, "Mehrere Messreihen erkannt — Spalte ", ds.info.usedColumn + 1, " gewählt, falls falsch:"), /*#__PURE__*/React.createElement("select", {
@@ -2888,9 +3094,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 6px",
       borderRadius: 8,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     }
   }, Array.from({
     length: ds.info.columns
@@ -2902,7 +3108,7 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textDecoration: "underline",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       background: "transparent",
       border: "none",
       padding: 0,
@@ -2911,7 +3117,7 @@ function StromtarifCockpit() {
   }, "Synthetisches Profil verwenden (kein Datensatz aktiv)")), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginTop: 10,
       display: "flex",
       gap: 4
@@ -2921,8 +3127,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2930,13 +3136,13 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "3 · 🌤️ Wetterprognose (Open-Meteo)"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 10
     }
   }, "Kostenlose 7-Tage-Strahlungs-, Temperatur- und Bewölkungsprognose — fliesst als Bias in die vorausschauende Batteriesteuerung ein. Benötigt Internetverbindung."), /*#__PURE__*/React.createElement("div", {
@@ -2956,8 +3162,8 @@ function StromtarifCockpit() {
       fontSize: 10,
       padding: "4px 8px",
       borderRadius: 8,
-      border: `1px solid ${weatherLoc.lat === loc.lat ? "#4FA88C" : "#2E3634"}`,
-      color: weatherLoc.lat === loc.lat ? "#EDEDE9" : "#8A938E",
+      border: `1px solid ${weatherLoc.lat === loc.lat ? "#4FA88C" : "var(--stc-border)"}`,
+      color: weatherLoc.lat === loc.lat ? "var(--stc-text)" : "var(--stc-muted)",
       backgroundColor: "transparent"
     }
   }, loc.name))), /*#__PURE__*/React.createElement("div", {
@@ -2978,9 +3184,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "6px 8px",
       borderRadius: 8,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     },
     placeholder: "Breitengrad"
   }), /*#__PURE__*/React.createElement("input", {
@@ -2995,9 +3201,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "6px 8px",
       borderRadius: 8,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     },
     placeholder: "Längengrad"
   })), /*#__PURE__*/React.createElement("button", {
@@ -3008,8 +3214,8 @@ function StromtarifCockpit() {
       fontSize: 12,
       padding: "8px 0",
       borderRadius: 8,
-      border: "1px dashed #3A423F",
-      color: "#8A938E",
+      border: "1px dashed var(--stc-border-soft)",
+      color: "var(--stc-muted)",
       background: "transparent"
     }
   }, weatherLoading ? "Lädt…" : "📡 Prognose laden"), weatherError && /*#__PURE__*/React.createElement("div", {
@@ -3039,7 +3245,7 @@ function StromtarifCockpit() {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Ø Prognose 7 Tage"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -3056,19 +3262,19 @@ function StromtarifCockpit() {
     className: "stc-mono",
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Saisonales Modellmittel"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
     style: {
       fontSize: 15,
       fontWeight: 600,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, weatherForecast.avgModel, " kWh/kWp"))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginTop: 8
     }
   }, "Prognose-Faktor: ", /*#__PURE__*/React.createElement("span", {
@@ -3082,7 +3288,7 @@ function StromtarifCockpit() {
       fontSize: 11,
       marginTop: 6,
       textDecoration: "underline",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       background: "transparent",
       border: "none",
       padding: 0
@@ -3092,8 +3298,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -3101,13 +3307,13 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "4 · 💶 Preissignal EW"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 10
     }
   }, "Vom Elektrizitätswerk übermittelter Tarifplan. Nicht jedes EW arbeitet gleich — Modus wählen:"), /*#__PURE__*/React.createElement("div", {
@@ -3124,9 +3330,9 @@ function StromtarifCockpit() {
       padding: "8px 4px",
       borderRadius: 8,
       textAlign: "center",
-      border: `1px solid ${tariffMode === "zeittarif" ? "#4FA88C" : "#2E3634"}`,
-      color: tariffMode === "zeittarif" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: tariffMode === "zeittarif" ? "#1A2420" : "transparent"
+      border: `1px solid ${tariffMode === "zeittarif" ? "#4FA88C" : "var(--stc-border)"}`,
+      color: tariffMode === "zeittarif" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: tariffMode === "zeittarif" ? "var(--stc-panel-info)" : "transparent"
     }
   }, "Hoch-/Niedertarif"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTariffMode("einheitstarif"),
@@ -3136,9 +3342,9 @@ function StromtarifCockpit() {
       padding: "8px 4px",
       borderRadius: 8,
       textAlign: "center",
-      border: `1px solid ${tariffMode === "einheitstarif" ? "#4FA88C" : "#2E3634"}`,
-      color: tariffMode === "einheitstarif" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: tariffMode === "einheitstarif" ? "#1A2420" : "transparent"
+      border: `1px solid ${tariffMode === "einheitstarif" ? "#4FA88C" : "var(--stc-border)"}`,
+      color: tariffMode === "einheitstarif" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: tariffMode === "einheitstarif" ? "var(--stc-panel-info)" : "transparent"
     }
   }, "Einheitstarif"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setTariffMode("dynamisch"),
@@ -3148,20 +3354,20 @@ function StromtarifCockpit() {
       padding: "8px 4px",
       borderRadius: 8,
       textAlign: "center",
-      border: `1px solid ${tariffMode === "dynamisch" ? "#4FA88C" : "#2E3634"}`,
-      color: tariffMode === "dynamisch" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: tariffMode === "dynamisch" ? "#1A2420" : "transparent"
+      border: `1px solid ${tariffMode === "dynamisch" ? "#4FA88C" : "var(--stc-border)"}`,
+      color: tariffMode === "dynamisch" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: tariffMode === "dynamisch" ? "var(--stc-panel-info)" : "transparent"
     }
   }, "Dynamischer Tarif")), tariffMode === "zeittarif" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 10
     }
   }, tariffTiers.length, " feste Tarifstufen mit eigenen Zeitfenstern — Preise und Zeiten frei editierbar."), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "Tagesverlauf Werktag"), /*#__PURE__*/React.createElement(TariffScheduleStrip, {
@@ -3170,7 +3376,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       margin: "10px 0 4px"
     }
   }, "Tagesverlauf Wochenende"), /*#__PURE__*/React.createElement(TariffScheduleStrip, {
@@ -3189,7 +3395,7 @@ function StromtarifCockpit() {
       borderRadius: 10,
       padding: 10,
       border: `1px solid ${tier.color}66`,
-      backgroundColor: "#181D1F"
+      backgroundColor: "var(--stc-panel-2)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3208,7 +3414,7 @@ function StromtarifCockpit() {
     className: "stc-mono",
     style: {
       fontSize: 13,
-      color: "#EDEDE9"
+      color: "var(--stc-text)"
     }
   }, tier.price, " Rp/kWh")), /*#__PURE__*/React.createElement(SliderRow, {
     label: "Preis",
@@ -3233,7 +3439,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 2
     }
   }, "Von"), /*#__PURE__*/React.createElement("input", {
@@ -3249,9 +3455,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 6px",
       borderRadius: 6,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3260,7 +3466,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 2
     }
   }, "Bis"), /*#__PURE__*/React.createElement("input", {
@@ -3276,9 +3482,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 6px",
       borderRadius: 6,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     }
   })), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3287,7 +3493,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 2
     }
   }, "Gültig"), /*#__PURE__*/React.createElement("select", {
@@ -3300,9 +3506,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "5px 6px",
       borderRadius: 6,
-      background: "#14181A",
-      border: "1px solid #2E3634",
-      color: "#EDEDE9"
+      background: "var(--stc-bg)",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)"
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "all"
@@ -3314,13 +3520,13 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 10,
       padding: 12,
-      border: "1px solid #2E3634",
-      backgroundColor: "#181D1F"
+      border: "1px solid var(--stc-border)",
+      backgroundColor: "var(--stc-panel-2)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 8
     }
   }, "Einheitstarif: ein einziger Preis, unabhängig von Uhrzeit oder Wochentag."), /*#__PURE__*/React.createElement(SliderRow, {
@@ -3334,7 +3540,7 @@ function StromtarifCockpit() {
   })), tariffMode === "dynamisch" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 10
     }
   }, "Beliebig viele Tarifstufen, jede mit eigenem Preis und per Regler frei wählbarem Zeitfenster."), /*#__PURE__*/React.createElement("div", {
@@ -3347,7 +3553,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Anzahl Tarife"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3365,8 +3571,8 @@ function StromtarifCockpit() {
       width: 26,
       height: 26,
       borderRadius: 8,
-      border: "1px solid #2E3634",
-      color: "#EDEDE9",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)",
       background: "transparent"
     }
   }, "−"), /*#__PURE__*/React.createElement("span", {
@@ -3387,14 +3593,14 @@ function StromtarifCockpit() {
       width: 26,
       height: 26,
       borderRadius: 8,
-      border: "1px solid #2E3634",
-      color: "#EDEDE9",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-text)",
       background: "transparent"
     }
   }, "+"))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "Tagesverlauf"), /*#__PURE__*/React.createElement(TariffScheduleStrip, {
@@ -3413,7 +3619,7 @@ function StromtarifCockpit() {
       borderRadius: 10,
       padding: 10,
       border: `1px solid ${tier.color}66`,
-      backgroundColor: "#181D1F"
+      backgroundColor: "var(--stc-panel-2)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3432,7 +3638,7 @@ function StromtarifCockpit() {
     className: "stc-mono",
     style: {
       fontSize: 13,
-      color: "#EDEDE9"
+      color: "var(--stc-text)"
     }
   }, tier.price, " Rp/kWh")), /*#__PURE__*/React.createElement(SliderRow, {
     label: "Preis",
@@ -3471,18 +3677,18 @@ function StromtarifCockpit() {
     style: {
       marginTop: 14,
       paddingTop: 12,
-      borderTop: "1px solid #2E3634"
+      borderTop: "1px solid var(--stc-border)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "Zusätzliches Netzstatus-Signal (Demand Response)"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 8
     }
   }, "Simulierter Trigger — hier würde in der Praxis ein reales Signal des EW andocken (z.B. via API/EEBus) und die Batterie-Netzladung sperren/drosseln."), /*#__PURE__*/React.createElement("div", {
@@ -3514,37 +3720,37 @@ function StromtarifCockpit() {
       padding: "8px 2px",
       borderRadius: 8,
       textAlign: "center",
-      border: `1px solid ${levers.ewSignal === opt.key ? "#4FA88C" : "#2E3634"}`,
-      color: levers.ewSignal === opt.key ? "#EDEDE9" : "#8A938E",
-      backgroundColor: levers.ewSignal === opt.key ? "#1A2420" : "transparent"
+      border: `1px solid ${levers.ewSignal === opt.key ? "#4FA88C" : "var(--stc-border)"}`,
+      color: levers.ewSignal === opt.key ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: levers.ewSignal === opt.key ? "var(--stc-panel-info)" : "transparent"
     }
   }, /*#__PURE__*/React.createElement("div", null, opt.label), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, opt.desc)))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginTop: 8
     }
   }, levers.ewSignal === "rot" && "Rot: Netzladung der Batterie komplett gesperrt (Netzentlastung hat Vorrang).", levers.ewSignal === "gelb" && "Gelb: Netzladung auf 50% Leistung gedrosselt.", levers.ewSignal === "gruen" && "Grün: volle Vorausschau-/Arbitragefunktion erlaubt.")), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 14,
       paddingTop: 12,
-      borderTop: "1px solid #2E3634"
+      borderTop: "1px solid var(--stc-border)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "🔌 Systemdienstleistungen (Swissgrid via EW)"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginBottom: 8
     }
   }, "Simuliertes Signal — zeigt, was der Kunde für Laden/Entladen der Batterie in diesem Moment für Netz-Systemdienstleistungen (z.B. Primärregelleistung, die Swissgrid ausschreibt und das EW als Aggregator vermarktet) vergütet bekäme."), /*#__PURE__*/React.createElement("div", {
@@ -3557,7 +3763,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Batterie dafür freigeben"), /*#__PURE__*/React.createElement(Toggle, {
     checked: levers.sdlEnabled,
@@ -3577,13 +3783,13 @@ function StromtarifCockpit() {
       flex: 1,
       borderRadius: 8,
       padding: 8,
-      backgroundColor: "#181D1F",
+      backgroundColor: "var(--stc-panel-2)",
       textAlign: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Vergütung jetzt: Laden"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -3597,13 +3803,13 @@ function StromtarifCockpit() {
       flex: 1,
       borderRadius: 8,
       padding: 8,
-      backgroundColor: "#181D1F",
+      backgroundColor: "var(--stc-panel-2)",
       textAlign: "center"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 9,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Vergütung jetzt: Entladen"), /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -3626,7 +3832,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginTop: 4
     }
   }, "Fliesst als zusätzlicher Ertrag in die Amortisationsrechnung der Batterie ein.")))), /*#__PURE__*/React.createElement("div", {
@@ -3634,8 +3840,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginTop: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -3643,7 +3849,7 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 12
     }
   }, "5 · Tarifparameter"), /*#__PURE__*/React.createElement("div", {
@@ -3684,7 +3890,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 12,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, "Leistungstarif (Spitzenlast)"), /*#__PURE__*/React.createElement(Toggle, {
     checked: tariff.leistungActive,
@@ -3713,7 +3919,7 @@ function StromtarifCockpit() {
     style: {
       fontSize: 11,
       textTransform: "uppercase",
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       margin: "16px 0 8px"
     }
   }, "6 · Hebel (per Button ein-/ausschaltbar)"), /*#__PURE__*/React.createElement(LeverButton, {
@@ -3750,7 +3956,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamtleistung: ", fmt1(levers.pvKwp * levers.pvCount), " kWp", levers.pvKwp * levers.pvCount >= 30 ? " (≥ 30 kWp — beachte abweichende Einspeise-/Messvorgaben in CH)" : "")), /*#__PURE__*/React.createElement(LeverButton, {
     icon: "🔋",
@@ -3819,18 +4025,18 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamt: ", fmt1(levers.batteryKwh * levers.batteryCount), " kWh · ", fmt1(levers.batteryKw * levers.batteryCount), " kW · Investition ≈ ", fmt0(levers.batteryKwh * levers.batteryCount * levers.batteryCostPerKwh), " CHF"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 10,
       paddingTop: 10,
-      borderTop: "1px solid #2E3634"
+      borderTop: "1px solid var(--stc-border)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "🧠 Steuerungsstrategie"), /*#__PURE__*/React.createElement("div", {
@@ -3848,9 +4054,9 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "6px 0",
       borderRadius: 8,
-      border: `1px solid ${levers.batteryStrategy === "reactive" ? "#F2B84B" : "#2E3634"}`,
-      color: levers.batteryStrategy === "reactive" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: levers.batteryStrategy === "reactive" ? "#2A2419" : "transparent"
+      border: `1px solid ${levers.batteryStrategy === "reactive" ? "#F2B84B" : "var(--stc-border)"}`,
+      color: levers.batteryStrategy === "reactive" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: levers.batteryStrategy === "reactive" ? "var(--stc-active-bg)" : "transparent"
     }
   }, "Reaktiv"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setLevers(p => ({
@@ -3862,14 +4068,14 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "6px 0",
       borderRadius: 8,
-      border: `1px solid ${levers.batteryStrategy === "predictive" ? "#F2B84B" : "#2E3634"}`,
-      color: levers.batteryStrategy === "predictive" ? "#EDEDE9" : "#8A938E",
-      backgroundColor: levers.batteryStrategy === "predictive" ? "#2A2419" : "transparent"
+      border: `1px solid ${levers.batteryStrategy === "predictive" ? "#F2B84B" : "var(--stc-border)"}`,
+      color: levers.batteryStrategy === "predictive" ? "var(--stc-text)" : "var(--stc-muted)",
+      backgroundColor: levers.batteryStrategy === "predictive" ? "var(--stc-active-bg)" : "transparent"
     }
   }, "Vorausschauend")), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       marginTop: 4
     }
   }, levers.batteryStrategy === "predictive" ? "Lädt bei Bedarf gezielt aus einer günstigeren Tarifstufe vor, wenn bald eine teurere beginnt UND die eigene PV-Prognose den Tagesbedarf voraussichtlich nicht deckt. Berücksichtigt alle Tarifstufen, Wetterprognose-Bias und Netzstatus-Signal." : "Lädt nur aus PV-Überschuss, entlädt bei Bedarf — maximiert Eigenverbrauch, ohne Tarif-Voraussicht."))), /*#__PURE__*/React.createElement(LeverButton, {
@@ -3917,7 +4123,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamtleistung: ", fmt1(levers.wpKwTh * levers.wpCount), " kW th")), /*#__PURE__*/React.createElement(LeverButton, {
     icon: "🚿",
@@ -3953,7 +4159,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamtleistung: ", fmt1(levers.boilerKw * levers.boilerCount), " kW")), /*#__PURE__*/React.createElement(LeverButton, {
     icon: "🧯",
@@ -3989,7 +4195,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamtleistung: ", fmt1(levers.elektroKw * levers.elektroCount), " kW (direkt-elektrisch, COP = 1)")), /*#__PURE__*/React.createElement(LeverButton, {
     icon: "⚡",
@@ -4036,7 +4242,7 @@ function StromtarifCockpit() {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#5A6360"
+      color: "var(--stc-muted-2)"
     }
   }, "Gesamtleistung: ", fmt1(levers.ladKw * levers.ladCount), " kW"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4079,8 +4285,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#241D14",
-      border: "1px solid #4A3A1F"
+      backgroundColor: "var(--stc-panel-warm)",
+      border: "1px solid var(--stc-border-warm)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "stc-display",
@@ -4093,7 +4299,7 @@ function StromtarifCockpit() {
   }, "🔋 Batteriespeicher & Amortisation"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 14
     }
   }, "Vergleich mit/ohne Speicher bei identischen übrigen Einstellungen — zeigt, wie schnell sich die Investition durch tiefere Stromkosten auszahlt."), /*#__PURE__*/React.createElement("div", {
@@ -4152,7 +4358,7 @@ function StromtarifCockpit() {
       gap: 12,
       marginTop: 10,
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -4177,8 +4383,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4207,8 +4413,8 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "4px 8px",
       borderRadius: 8,
-      border: "1px solid #2E3634",
-      color: "#8A938E",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-muted)",
       background: "transparent"
     }
   }, "Winter"), /*#__PURE__*/React.createElement("button", {
@@ -4217,8 +4423,8 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "4px 8px",
       borderRadius: 8,
-      border: "1px solid #2E3634",
-      color: "#8A938E",
+      border: "1px solid var(--stc-border)",
+      color: "var(--stc-muted)",
       background: "transparent"
     }
   }, "Sommer"))), /*#__PURE__*/React.createElement("input", {
@@ -4239,7 +4445,7 @@ function StromtarifCockpit() {
       gap: 12,
       marginTop: 10,
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -4276,7 +4482,7 @@ function StromtarifCockpit() {
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 4
     }
   }, "🔋 Batterie-Ladezustand (Tagesverlauf)"), /*#__PURE__*/React.createElement(MiniSparkline, {
@@ -4289,8 +4495,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4317,8 +4523,8 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "4px 8px",
       borderRadius: 8,
-      border: `1px solid ${heatMode === "max" ? "#E8A33D" : "#2E3634"}`,
-      color: heatMode === "max" ? "#EDEDE9" : "#8A938E",
+      border: `1px solid ${heatMode === "max" ? "#E8A33D" : "var(--stc-border)"}`,
+      color: heatMode === "max" ? "var(--stc-text)" : "var(--stc-muted)",
       background: "transparent"
     }
   }, "Maximum"), /*#__PURE__*/React.createElement("button", {
@@ -4327,14 +4533,14 @@ function StromtarifCockpit() {
       fontSize: 11,
       padding: "4px 8px",
       borderRadius: 8,
-      border: `1px solid ${heatMode === "avg" ? "#E8A33D" : "#2E3634"}`,
-      color: heatMode === "avg" ? "#EDEDE9" : "#8A938E",
+      border: `1px solid ${heatMode === "avg" ? "#E8A33D" : "var(--stc-border)"}`,
+      color: heatMode === "avg" ? "var(--stc-text)" : "var(--stc-muted)",
       background: "transparent"
     }
   }, "Durchschnitt"))), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 10
     }
   }, "Netzbezug [kW] je Wochentag & 15-Min-Slot — ", heatMode === "max" ? "höchster beobachteter Wert (Lastspitzen)" : "Durchschnittswert"), /*#__PURE__*/React.createElement(LoadHeatmap, {
@@ -4344,8 +4550,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4358,7 +4564,7 @@ function StromtarifCockpit() {
   }, "Kosten im Verhältnis zum Verbrauch"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 10
     }
   }, "Monatlicher Netzbezug [kWh] vs. Stromkosten [CHF] — zeigt, ob Kosten proportional zum Verbrauch verlaufen oder z.B. durch Tarifstruktur/Leistungsspitzen davon abweichen"), /*#__PURE__*/React.createElement(CostVsConsumptionChart, {
@@ -4368,8 +4574,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4382,7 +4588,7 @@ function StromtarifCockpit() {
   }, "📈 Mehrjahresvergleich"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 10
     }
   }, "Jahresverbrauch & -kosten je hochgeladenem Datensatz, alle mit den aktuellen Hebel- und Tarifeinstellungen berechnet — zeigt die Entwicklung über mehrere Jahre/Datensätze hinweg."), /*#__PURE__*/React.createElement(CostVsConsumptionChart, {
@@ -4392,8 +4598,8 @@ function StromtarifCockpit() {
       borderRadius: 14,
       padding: 16,
       marginBottom: 20,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4411,7 +4617,7 @@ function StromtarifCockpit() {
       gap: 12,
       marginTop: 10,
       fontSize: 11,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
     style: {
@@ -4425,8 +4631,8 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 14,
       padding: 16,
-      backgroundColor: "#1D2321",
-      border: "1px solid #2E3634",
+      backgroundColor: "var(--stc-panel)",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4439,7 +4645,7 @@ function StromtarifCockpit() {
   }, "Jahresdauerlinie (Netzbezug)"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
-      color: "#8A938E",
+      color: "var(--stc-muted)",
       marginBottom: 10
     }
   }, "Relevant für Leistungstarif-Bewertung bei Gewerbe / Industrie / Grosskunde"), /*#__PURE__*/React.createElement(DurationLineChart, {
@@ -4451,13 +4657,13 @@ function StromtarifCockpit() {
       gap: 10,
       marginTop: 20,
       fontSize: 12,
-      color: "#8A938E"
+      color: "var(--stc-muted)"
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       borderRadius: 10,
       padding: 10,
-      border: "1px solid #2E3634",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, "Energiekosten", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
@@ -4470,7 +4676,7 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 10,
       padding: 10,
-      border: "1px solid #2E3634",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, "Netzentgelt", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
@@ -4483,7 +4689,7 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 10,
       padding: 10,
-      border: "1px solid #2E3634",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, "Leistungspreis", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
@@ -4496,7 +4702,7 @@ function StromtarifCockpit() {
     style: {
       borderRadius: 10,
       padding: 10,
-      border: "1px solid #2E3634",
+      border: "1px solid var(--stc-border)",
       boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
     }
   }, "Einspeiseertrag", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
@@ -4509,7 +4715,7 @@ function StromtarifCockpit() {
     style: {
       marginTop: 24,
       fontSize: 11,
-      color: "#5A6360",
+      color: "var(--stc-muted-2)",
       textAlign: "center"
     }
   }, "Vereinfachtes Simulationsmodell · synthetische Lastprofile · für Beratungs-/Thesis-Zwecke")))));
