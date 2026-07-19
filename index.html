@@ -12,9 +12,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Energy Pilot" />
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap");
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; }
+  html, body { margin: 0; padding: 0; font-family: Roboto, Arial, sans-serif; }
 
   .stromtarif-cockpit-root {
     --stc-bg: #14181A; --stc-panel: #1D2321; --stc-panel-2: #181D1F;
@@ -51,7 +51,7 @@
   input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
   input[type=color]::-webkit-color-swatch { border: 1px solid var(--stc-border); border-radius: 8px; }
   .stc-mono { font-family: "IBM Plex Mono", monospace; }
-  .stc-display { font-family: "Space Grotesk", sans-serif; }
+  .stc-display { font-family: "Roboto", sans-serif; font-weight: 700; }
 
   .wattfox-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
   @media (min-width: 1024px) {
@@ -3633,35 +3633,59 @@ function StromtarifCockpit() {
     id: "netzkarte",
     title: "Netzinfrastruktur",
     icon: "🗺️",
-    subtitle: "Leitungen, Umspannwerke & Kraftwerke rund um den gewählten Standort (OpenStreetMap-Daten).",
+    subtitle: "Standort-Karte eingebettet, Detailkarte (Leitungen/Umspannwerke) als Link.",
     collapsed: !!tileCollapsed.netzkarte,
     onToggleCollapsed: () => toggleTileCollapsed("netzkarte"),
     dragProps: makeDragProps("netzkarte"),
     order: tileOrder.indexOf("netzkarte")
   }, /*#__PURE__*/React.createElement("iframe", {
-    title: "Netzinfrastruktur-Karte (OpenInfraMap)",
-    src: `https://openinframap.org/#13/${weatherLoc.lat}/${weatherLoc.lon}`,
+    title: "Standort-Karte (OpenStreetMap)",
+    src: `https://www.openstreetmap.org/export/embed.html?bbox=${weatherLoc.lon - 0.06},${weatherLoc.lat - 0.035},${weatherLoc.lon + 0.06},${weatherLoc.lat + 0.035}&layer=mapnik&marker=${weatherLoc.lat},${weatherLoc.lon}`,
     style: {
       width: "100%",
-      height: 320,
+      height: 260,
       border: "none",
       borderRadius: 10
     },
     loading: "lazy"
-  }), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("a", {
+    href: `https://openinframap.org/#13/${weatherLoc.lat}/${weatherLoc.lon}`,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: 8,
+      padding: "9px 0",
+      borderRadius: 8,
+      border: "1px solid var(--stc-border-soft)",
+      color: "var(--stc-muted)",
+      fontSize: 12,
+      textDecoration: "none"
+    }
+  }, "⚡ Netzinfrastruktur-Detailkarte öffnen (OpenInfraMap) ↗"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "var(--stc-muted-2)",
       marginTop: 8
     }
-  }, "Quelle: ", /*#__PURE__*/React.createElement("a", {
+  }, "Standortkarte: ", /*#__PURE__*/React.createElement("a", {
+    href: "https://www.openstreetmap.org/copyright",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      color: "var(--stc-muted)"
+    }
+  }, "OpenStreetMap"), "-Mitwirkende (ODbL). Detailkarte mit Leitungen/Umspannwerken/Kraftwerken: ", /*#__PURE__*/React.createElement("a", {
     href: "https://openinframap.org/",
     target: "_blank",
     rel: "noopener noreferrer",
     style: {
       color: "var(--stc-muted)"
     }
-  }, "OpenInfraMap"), " — offene, gemeinschaftlich erhobene Infrastrukturdaten (ODbL-Lizenz). Karte folgt automatisch dem in der Wetterprognose gewählten Standort.")), /*#__PURE__*/React.createElement(Tile, {
+  }, "OpenInfraMap"), " — lässt sich aus Sicherheitsgründen (X-Frame-Options) nicht einbetten, öffnet daher in neuem Tab, automatisch am gewählten Standort zentriert.")), /*#__PURE__*/React.createElement(Tile, {
     id: "preissignal",
     title: "Preissignal EW",
     icon: "💶",

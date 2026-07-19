@@ -1,4 +1,4 @@
-const CACHE_NAME = "energypilot-cockpit-v11";
+const CACHE_NAME = "energypilot-cockpit-v13";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-512-maskable.png", "./logo-mark.png", "./logo-banner.png"];
 
 self.addEventListener("install", (event) => {
