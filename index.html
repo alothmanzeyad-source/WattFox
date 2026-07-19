@@ -1088,55 +1088,110 @@ function weatherIcon(cloudCover) {
   if (cloudCover < 80) return "⛅";
   return "☁️";
 }
+
+// Benannte, unabhängige Wettermodelle (nationale Wetterdienste) — alle
+// assimilieren laufend Boden-, Radar- und Satellitendaten in ihre numerische
+// Wettervorhersage. Mehrere Quellen gleichzeitig = nachvollziehbarer Konsens
+// statt Blindvertrauen in eine einzelne Quelle.
+const WEATHER_MODELS = [{
+  id: "ecmwf_ifs025",
+  label: "ECMWF IFS",
+  org: "EU — European Centre for Medium-Range Weather Forecasts"
+}, {
+  id: "gfs_seamless",
+  label: "NOAA GFS",
+  org: "USA — National Oceanic and Atmospheric Administration"
+}, {
+  id: "icon_seamless",
+  label: "DWD ICON",
+  org: "Deutschland — Deutscher Wetterdienst"
+}];
 function processWeatherForecast(json, currentDayOfYear) {
   const times = json.hourly.time;
-  const radiation = json.hourly.shortwave_radiation;
-  const cloudCover = json.hourly.cloud_cover || [];
-  const temperature = json.hourly.temperature_2m || [];
-  const byDay = {};
-  for (let i = 0; i < times.length; i++) {
-    const dateKey = times[i].slice(0, 10);
-    if (!byDay[dateKey]) byDay[dateKey] = {
-      rad: [],
-      cloud: [],
-      temp: []
-    };
-    byDay[dateKey].rad.push(radiation[i] || 0);
-    byDay[dateKey].cloud.push(cloudCover[i] != null ? cloudCover[i] : 50);
-    byDay[dateKey].temp.push(temperature[i] != null ? temperature[i] : null);
-  }
-  const dateKeys = Object.keys(byDay).sort();
-  const performanceRatio = 0.85; // System-/Temperaturverluste, typische Annahme
-  const days = dateKeys.slice(0, 7).map(key => {
-    const b = byDay[key];
-    const kwhPerKwp = b.rad.reduce((sum, w) => sum + w / 1000 * performanceRatio, 0);
-    const avgCloud = b.cloud.reduce((a, v) => a + v, 0) / b.cloud.length;
-    const temps = b.temp.filter(t => t !== null);
-    const minTemp = temps.length ? Math.min(...temps) : null;
-    const maxTemp = temps.length ? Math.max(...temps) : null;
+  const performanceRatio = 0.85;
+  const perModelDays = {};
+  WEATHER_MODELS.forEach(m => {
+    const rad = json.hourly[`shortwave_radiation_${m.id}`];
+    if (!rad) return;
+    const cloud = json.hourly[`cloud_cover_${m.id}`] || [];
+    const temp = json.hourly[`temperature_2m_${m.id}`] || [];
+    const wind = json.hourly[`wind_speed_10m_${m.id}`] || [];
+    const gust = json.hourly[`wind_gusts_10m_${m.id}`] || [];
+    const byDay = {};
+    for (let i = 0; i < times.length; i++) {
+      const dateKey = times[i].slice(0, 10);
+      if (!byDay[dateKey]) byDay[dateKey] = {
+        rad: [],
+        cloud: [],
+        temp: [],
+        wind: [],
+        gust: []
+      };
+      byDay[dateKey].rad.push(rad[i] || 0);
+      byDay[dateKey].cloud.push(cloud[i] != null ? cloud[i] : 50);
+      byDay[dateKey].temp.push(temp[i] != null ? temp[i] : null);
+      byDay[dateKey].wind.push(wind[i] != null ? wind[i] : 0);
+      byDay[dateKey].gust.push(gust[i] != null ? gust[i] : 0);
+    }
+    const dateKeys = Object.keys(byDay).sort().slice(0, 7);
+    perModelDays[m.id] = dateKeys.map(key => {
+      const b = byDay[key];
+      const kwhPerKwp = b.rad.reduce((sum, w) => sum + w / 1000 * performanceRatio, 0);
+      const avgCloud = b.cloud.reduce((a, v) => a + v, 0) / b.cloud.length;
+      const temps = b.temp.filter(t => t !== null);
+      return {
+        date: key,
+        kwhPerKwp: +kwhPerKwp.toFixed(2),
+        cloudCover: Math.round(avgCloud),
+        minTemp: temps.length ? Math.round(Math.min(...temps)) : null,
+        maxTemp: temps.length ? Math.round(Math.max(...temps)) : null,
+        maxWind: Math.round(Math.max(...b.wind, 0)),
+        maxGust: Math.round(Math.max(...b.gust, 0))
+      };
+    });
+  });
+  const availableModels = WEATHER_MODELS.filter(m => perModelDays[m.id]);
+  const dayCount = availableModels.length > 0 ? perModelDays[availableModels[0].id].length : 0;
+  const days = Array.from({
+    length: dayCount
+  }, (_, idx) => {
+    const entries = availableModels.map(m => perModelDays[m.id][idx]).filter(Boolean);
+    const avg = field => entries.reduce((a, e) => a + e[field], 0) / entries.length;
+    const kwhPerKwp = +avg("kwhPerKwp").toFixed(2);
+    const cloudCover = Math.round(avg("cloudCover"));
+    const spread = entries.length > 1 ? Math.max(...entries.map(e => e.kwhPerKwp)) - Math.min(...entries.map(e => e.kwhPerKwp)) : 0;
     return {
-      date: key,
-      kwhPerKwp: +kwhPerKwp.toFixed(2),
-      cloudCover: Math.round(avgCloud),
-      minTemp: minTemp !== null ? Math.round(minTemp) : null,
-      maxTemp: maxTemp !== null ? Math.round(maxTemp) : null,
-      icon: weatherIcon(avgCloud)
+      date: entries[0].date,
+      kwhPerKwp,
+      cloudCover,
+      minTemp: Math.round(Math.min(...entries.map(e => e.minTemp))),
+      maxTemp: Math.round(Math.max(...entries.map(e => e.maxTemp))),
+      maxWind: Math.round(Math.max(...entries.map(e => e.maxWind))),
+      maxGust: Math.round(Math.max(...entries.map(e => e.maxGust))),
+      icon: weatherIcon(cloudCover),
+      modelSpread: +spread.toFixed(2),
+      perModel: entries.map((e, i) => ({
+        ...e,
+        model: availableModels[i].label
+      }))
     };
   });
+
   // Vergleich zum saisonal erwarteten Modellwert (unsere eigene pvIrradiance-Kurve)
   const modelExpected = days.map((_, idx) => {
     const seasonal = 0.5 + 0.5 * Math.cos(2 * Math.PI * (currentDayOfYear + idx - 172) / 365);
     const irr = 0.12 + 0.30 * seasonal;
-    return irr * 8.91; // gleiche Integrationskonstante wie pvDay()
+    return irr * 8.91;
   });
-  const avgForecast = days.reduce((a, b) => a + b.kwhPerKwp, 0) / days.length;
-  const avgModel = modelExpected.reduce((a, b) => a + b, 0) / modelExpected.length;
+  const avgForecast = days.length ? days.reduce((a, b) => a + b.kwhPerKwp, 0) / days.length : 0;
+  const avgModel = modelExpected.length ? modelExpected.reduce((a, b) => a + b, 0) / modelExpected.length : 1;
   const factor = avgModel > 0 ? avgForecast / avgModel : 1;
   return {
     days,
     factor: Math.max(0.3, Math.min(2, factor)),
     avgForecast: +avgForecast.toFixed(2),
-    avgModel: +avgModel.toFixed(2)
+    avgModel: +avgModel.toFixed(2),
+    modelsUsed: availableModels
   };
 }
 const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -1264,6 +1319,107 @@ function parseExcel(arrayBuffer, columnIndex) {
 // ---------------------------------------------------------------------------
 // Eigene, abhängigkeitsfreie SVG-Charts (keine externen Chart-Libraries)
 // ---------------------------------------------------------------------------
+// Tile-Wrapper: macht jede Haupt-Karte im Steuerpanel verschiebbar (Drag&Drop
+// per Ziehgriff), ein-/ausklappbar, und — falls es sich um einen "Trigger"
+// handelt (toggleable=true) — komplett aktivier-/deaktivierbar.
+function Tile({
+  id,
+  title,
+  icon,
+  subtitle,
+  toggleable,
+  enabled,
+  onToggleEnabled,
+  collapsed,
+  onToggleCollapsed,
+  dragProps,
+  accentColor,
+  order,
+  children
+}) {
+  const isOff = toggleable && !enabled;
+  return /*#__PURE__*/React.createElement("div", {
+    ...dragProps,
+    style: {
+      order,
+      borderRadius: 14,
+      marginTop: 16,
+      backgroundColor: "var(--stc-panel)",
+      border: `1px solid ${accentColor && !isOff ? accentColor + "66" : "var(--stc-border)"}`,
+      boxShadow: "0 2px 16px rgba(0,0,0,0.25)",
+      opacity: isOff ? 0.55 : 1,
+      transition: "opacity 0.15s ease"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "14px 16px",
+      paddingBottom: collapsed ? 14 : 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    draggable: true,
+    onDragStart: dragProps && dragProps.onTileDragStart,
+    title: "Ziehen zum Verschieben",
+    style: {
+      cursor: "grab",
+      color: "var(--stc-muted-2)",
+      fontSize: 14,
+      userSelect: "none",
+      flexShrink: 0
+    }
+  }, "⠿"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 15,
+      flexShrink: 0
+    }
+  }, icon), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "stc-mono",
+    style: {
+      fontSize: 11,
+      textTransform: "uppercase",
+      color: "var(--stc-muted)",
+      fontWeight: 600
+    }
+  }, title), subtitle && !collapsed && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "var(--stc-muted-2)",
+      marginTop: 2
+    }
+  }, subtitle)), toggleable && /*#__PURE__*/React.createElement(Toggle, {
+    checked: enabled,
+    onChange: onToggleEnabled,
+    color: "#4FA88C"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggleCollapsed,
+    title: collapsed ? "Aufklappen" : "Einklappen",
+    style: {
+      background: "transparent",
+      border: "none",
+      color: "var(--stc-muted)",
+      fontSize: 12,
+      padding: "2px 4px",
+      flexShrink: 0
+    }
+  }, collapsed ? "▸" : "▾")), !collapsed && (isOff ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "0 16px 16px",
+      fontSize: 11,
+      color: "var(--stc-muted-2)"
+    }
+  }, "Deaktiviert — Regler oben rechts zum Aktivieren.") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "0 16px 16px"
+    }
+  }, children)));
+}
 function StackedDayChart({
   data,
   width = 640,
@@ -1797,6 +1953,7 @@ function WeatherDayCards({
 }) {
   const WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
   const maxKwh = Math.max(1, ...data.map(d => d.kwhPerKwp));
+  const STORM_THRESHOLD = 60; // km/h Böen — grobe Warnschwelle
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
@@ -1806,6 +1963,7 @@ function WeatherDayCards({
   }, data.map((d, i) => {
     const wd = WD[new Date(d.date).getDay()];
     const barPct = Math.max(4, d.kwhPerKwp / maxKwh * 100);
+    const stormy = d.maxGust >= STORM_THRESHOLD;
     return /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
@@ -1813,7 +1971,7 @@ function WeatherDayCards({
         padding: "8px 4px",
         textAlign: "center",
         backgroundColor: i === 0 ? "var(--stc-active-bg)" : "var(--stc-panel-2)",
-        border: `1px solid ${i === 0 ? "#4FA88C" : "var(--stc-border)"}`
+        border: `1px solid ${stormy ? "#D9705A" : i === 0 ? "#4FA88C" : "var(--stc-border)"}`
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "stc-mono",
@@ -1855,13 +2013,20 @@ function WeatherDayCards({
         fontSize: 8,
         color: "var(--stc-muted-2)"
       }
-    }, "kWh/kWp"), d.maxTemp !== null && /*#__PURE__*/React.createElement("div", {
+    }, "kWh/kWp", d.modelSpread > 0.3 ? ` ±${d.modelSpread.toFixed(1)}` : ""), d.maxTemp !== null && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 9,
         color: "var(--stc-muted)",
         marginTop: 3
       }
-    }, d.maxTemp, "° / ", d.minTemp, "°"));
+    }, d.maxTemp, "° / ", d.minTemp, "°"), typeof d.maxGust === "number" && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 9,
+        color: stormy ? "#D9705A" : "var(--stc-muted-2)",
+        marginTop: 2,
+        fontWeight: stormy ? 600 : 400
+      }
+    }, stormy ? "⚠️ " : "💨 ", d.maxGust, " km/h"));
   }));
 }
 function LoadHeatmap({
@@ -2188,7 +2353,87 @@ function StromtarifCockpit() {
   const [weatherForecast, setWeatherForecast] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(null);
+  const [weatherLastUpdated, setWeatherLastUpdated] = useState(null);
+  const [weatherAutoRefresh, setWeatherAutoRefresh] = useState(true);
   const [themeMode, setThemeMode] = useState("dark"); // "dark" | "light" | "custom"
+
+  // Kachel-Reihenfolge, Ein-/Ausklapp- und Aktiv-Status — persistiert lokal im
+  // Browser, damit eine einmal eingerichtete Anordnung erhalten bleibt.
+  const DEFAULT_TILE_ORDER = ["szenarien", "objekttyp", "datenquelle", "wetter", "netzkarte", "preissignal", "tarifparameter"];
+  function loadTileState(key, fallback) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return parsed || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+  const [tileOrder, setTileOrder] = useState(() => loadTileState("ep_tileOrder", DEFAULT_TILE_ORDER));
+  const [tileCollapsed, setTileCollapsed] = useState(() => loadTileState("ep_tileCollapsed", {}));
+  const [tileEnabled, setTileEnabled] = useState(() => loadTileState("ep_tileEnabled", {
+    szenarien: true,
+    wetter: true,
+    preissignal: true
+  }));
+  const dragIdRef = useRef(null);
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("ep_tileOrder", JSON.stringify(tileOrder));
+    } catch (e) {}
+  }, [tileOrder]);
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("ep_tileCollapsed", JSON.stringify(tileCollapsed));
+    } catch (e) {}
+  }, [tileCollapsed]);
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("ep_tileEnabled", JSON.stringify(tileEnabled));
+    } catch (e) {}
+  }, [tileEnabled]);
+  function toggleTileCollapsed(id) {
+    setTileCollapsed(p => ({
+      ...p,
+      [id]: !p[id]
+    }));
+  }
+  function toggleTileEnabled(id) {
+    setTileEnabled(p => ({
+      ...p,
+      [id]: !p[id]
+    }));
+    if (id === "szenarien") resetScenario();
+  }
+  function makeDragProps(id) {
+    return {
+      onTileDragStart: e => {
+        dragIdRef.current = id;
+        e.dataTransfer.effectAllowed = "move";
+      },
+      onDragOver: e => e.preventDefault(),
+      onDrop: e => {
+        e.preventDefault();
+        const draggedId = dragIdRef.current;
+        if (!draggedId || draggedId === id) return;
+        setTileOrder(prev => {
+          const next = prev.filter(x => x !== draggedId);
+          const targetIdx = next.indexOf(id);
+          next.splice(targetIdx, 0, draggedId);
+          return next;
+        });
+      }
+    };
+  }
+  function resetTileLayout() {
+    setTileOrder(DEFAULT_TILE_ORDER);
+    setTileCollapsed({});
+    try {
+      window.localStorage.removeItem("ep_tileOrder");
+      window.localStorage.removeItem("ep_tileCollapsed");
+    } catch (e) {}
+  }
   const [customColors, setCustomColors] = useState(DEFAULT_CUSTOM_COLORS);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [heatMode, setHeatMode] = useState("max");
@@ -2221,19 +2466,33 @@ function StromtarifCockpit() {
     setWeatherLoading(true);
     setWeatherError(null);
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${weatherLoc.lat}&longitude=${weatherLoc.lon}&hourly=shortwave_radiation,cloud_cover,temperature_2m&forecast_days=7&timezone=auto`;
+      const modelParam = WEATHER_MODELS.map(m => m.id).join(",");
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${weatherLoc.lat}&longitude=${weatherLoc.lon}&hourly=shortwave_radiation,cloud_cover,temperature_2m,wind_speed_10m,wind_gusts_10m&models=${modelParam}&forecast_days=7&timezone=auto`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Wetterdienst antwortete mit HTTP ${res.status}`);
       const json = await res.json();
       const todayDayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
       const processed = processWeatherForecast(json, todayDayOfYear);
       setWeatherForecast(processed);
+      setWeatherLastUpdated(new Date());
     } catch (err) {
       setWeatherError("Prognose konnte nicht geladen werden (" + err.message + "). Prüfe die Internetverbindung.");
     } finally {
       setWeatherLoading(false);
     }
   }
+
+  // Automatische Aktualisierung: sobald einmal manuell geladen wurde, holt die
+  // App die Prognose alle 3 Stunden erneut (die zugrundeliegenden Wettermodelle
+  // laufen selbst alle 1-6 Stunden neu) — so bleibt sie ohne weiteres Zutun
+  // aktuell. Startet bewusst NICHT automatisch beim ersten Öffnen der Seite.
+  React.useEffect(() => {
+    if (!weatherForecast || !weatherAutoRefresh) return;
+    const interval = window.setInterval(() => {
+      loadWeatherForecast();
+    }, 3 * 60 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [weatherForecast !== null, weatherAutoRefresh, weatherLoc.lat, weatherLoc.lon]);
   function handleTypeChange(t) {
     setType(t);
     setScale(BUILDING_TYPES[t].defaultScale);
@@ -2322,9 +2581,26 @@ function StromtarifCockpit() {
     if (!activeDataset) return null;
     return activeDataset.unit === "kW" ? activeDataset.values.map(v => v * 0.25) : activeDataset.values;
   }, [activeDataset]);
-  const effectiveForecastFactor = activeScenario ? scenarioPvFactor : weatherForecast ? weatherForecast.factor : 1;
+
+  // Trigger-Kacheln lassen sich einzeln deaktivieren — dann wirken sie nicht
+  // mehr auf die Simulation (neutraler Standardwert statt Prognose/Tarifsignal).
+  const wetterEnabled = tileEnabled.wetter !== false;
+  const preissignalEnabled = tileEnabled.preissignal !== false;
+  const szenarienEnabled = tileEnabled.szenarien !== false;
+  const effectiveForecastFactor = szenarienEnabled && activeScenario ? scenarioPvFactor : wetterEnabled && weatherForecast ? weatherForecast.factor : 1;
   const sdlNow = sdlInstantRates(new Date());
   const activeTariffTiers = useMemo(() => {
+    if (!preissignalEnabled) {
+      return [{
+        id: "flat",
+        name: "Standardtarif",
+        price: 20,
+        startHour: 0,
+        endHour: 24,
+        scope: "all",
+        color: "var(--stc-muted)"
+      }];
+    }
     if (tariffMode === "einheitstarif") {
       return [{
         id: "flat",
@@ -2340,11 +2616,11 @@ function StromtarifCockpit() {
       return dynamicTiers;
     }
     return tariffTiers;
-  }, [tariffMode, flatPrice, dynamicTiers, tariffTiers]);
-  const effectiveTariffTiers = useMemo(() => scenarioTariffMultiplier !== 1 ? activeTariffTiers.map(t => ({
+  }, [preissignalEnabled, tariffMode, flatPrice, dynamicTiers, tariffTiers]);
+  const effectiveTariffTiers = useMemo(() => szenarienEnabled && scenarioTariffMultiplier !== 1 ? activeTariffTiers.map(t => ({
     ...t,
     price: t.price * scenarioTariffMultiplier
-  })) : activeTariffTiers, [activeTariffTiers, scenarioTariffMultiplier]);
+  })) : activeTariffTiers, [activeTariffTiers, scenarioTariffMultiplier, szenarienEnabled]);
   const sim = useMemo(() => runSimulation({
     type,
     scale,
@@ -2837,25 +3113,24 @@ function StromtarifCockpit() {
   })))), /*#__PURE__*/React.createElement("div", {
     className: "wattfox-grid"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "wattfox-panel"
-  }, /*#__PURE__*/React.createElement("div", {
+    className: "wattfox-panel",
     style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel-warm)",
-      border: "1px solid var(--stc-border-warm)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
+      display: "flex",
+      flexDirection: "column"
     }
+  }, /*#__PURE__*/React.createElement(Tile, {
+    id: "szenarien",
+    title: "Szenarien — Schnellstart",
+    icon: "🎬",
+    accentColor: "#E8A33D",
+    toggleable: true,
+    enabled: tileEnabled.szenarien !== false,
+    onToggleEnabled: () => toggleTileEnabled("szenarien"),
+    collapsed: !!tileCollapsed.szenarien,
+    onToggleCollapsed: () => toggleTileCollapsed("szenarien"),
+    dragProps: makeDragProps("szenarien"),
+    order: tileOrder.indexOf("szenarien")
   }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "#E8A33D",
-      marginBottom: 4
-    }
-  }, "🎬 Szenarien — Schnellstart"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "var(--stc-muted)",
@@ -2901,24 +3176,15 @@ function StromtarifCockpit() {
       border: "none",
       padding: 0
     }
-  }, "Szenario zurücksetzen (Hebel bleiben erhalten)")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel)",
-      border: "1px solid var(--stc-border)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
-    }
+  }, "Szenario zurücksetzen (Hebel bleiben erhalten)")), /*#__PURE__*/React.createElement(Tile, {
+    id: "objekttyp",
+    title: "Objekttyp",
+    icon: "🏠",
+    collapsed: !!tileCollapsed.objekttyp,
+    onToggleCollapsed: () => toggleTileCollapsed("objekttyp"),
+    dragProps: makeDragProps("objekttyp"),
+    order: tileOrder.indexOf("objekttyp")
   }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "var(--stc-muted)",
-      marginBottom: 12
-    }
-  }, "1 · Objekttyp"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "1fr 1fr 1fr",
@@ -2964,30 +3230,16 @@ function StromtarifCockpit() {
       color: "var(--stc-muted)",
       marginTop: 6
     }
-  }, "Referenzverbrauch: ≈ ", fmt0(bt.kwhPerUnit * scale), " kWh/Jahr")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel)",
-      border: "1px solid var(--stc-border)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "var(--stc-muted)",
-      marginBottom: 4
-    }
-  }, "2 · Datenquelle Grundlast"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "var(--stc-muted-2)",
-      marginBottom: 10
-    }
-  }, "Mehrere Dateien möglich — z.B. je ein Lastprofil pro Jahr, um die Entwicklung über die Zeit zu vergleichen."), /*#__PURE__*/React.createElement("button", {
+  }, "Referenzverbrauch: ≈ ", fmt0(bt.kwhPerUnit * scale), " kWh/Jahr")), /*#__PURE__*/React.createElement(Tile, {
+    id: "datenquelle",
+    title: "Datenquelle Grundlast",
+    icon: "📊",
+    subtitle: "Mehrere Dateien möglich — z.B. je ein Lastprofil pro Jahr, um die Entwicklung über die Zeit zu vergleichen.",
+    collapsed: !!tileCollapsed.datenquelle,
+    onToggleCollapsed: () => toggleTileCollapsed("datenquelle"),
+    dragProps: makeDragProps("datenquelle"),
+    order: tileOrder.indexOf("datenquelle")
+  }, /*#__PURE__*/React.createElement("button", {
     onClick: () => fileRef.current.click(),
     style: {
       width: "100%",
@@ -3143,30 +3395,19 @@ function StromtarifCockpit() {
       display: "flex",
       gap: 4
     }
-  }, /*#__PURE__*/React.createElement("span", null, "ℹ️"), /*#__PURE__*/React.createElement("span", null, "Ohne aktiven Datensatz wird ein synthetisches 15-Min-Profil je Objekttyp erzeugt. Das Lastprofil ersetzt nur die Grundlast — Hebel werden weiterhin addiert/subtrahiert."))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel)",
-      border: "1px solid var(--stc-border)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
-    }
+  }, /*#__PURE__*/React.createElement("span", null, "ℹ️"), /*#__PURE__*/React.createElement("span", null, "Ohne aktiven Datensatz wird ein synthetisches 15-Min-Profil je Objekttyp erzeugt. Das Lastprofil ersetzt nur die Grundlast — Hebel werden weiterhin addiert/subtrahiert."))), /*#__PURE__*/React.createElement(Tile, {
+    id: "wetter",
+    title: "Wetterprognose",
+    icon: "🌤️",
+    subtitle: "Konsens aus 3 unabhängigen Wetterdiensten — fliesst als Bias in die Batteriesteuerung ein.",
+    toggleable: true,
+    enabled: tileEnabled.wetter !== false,
+    onToggleEnabled: () => toggleTileEnabled("wetter"),
+    collapsed: !!tileCollapsed.wetter,
+    onToggleCollapsed: () => toggleTileCollapsed("wetter"),
+    dragProps: makeDragProps("wetter"),
+    order: tileOrder.indexOf("wetter")
   }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "var(--stc-muted)",
-      marginBottom: 4
-    }
-  }, "3 · 🌤️ Wetterprognose (Open-Meteo)"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      color: "var(--stc-muted-2)",
-      marginBottom: 10
-    }
-  }, "Kostenlose 7-Tage-Strahlungs-, Temperatur- und Bewölkungsprognose — fliesst als Bias in die vorausschauende Batteriesteuerung ein. Benötigt Internetverbindung."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 6,
@@ -3303,41 +3544,136 @@ function StromtarifCockpit() {
       color: "#F2B84B",
       fontWeight: 600
     }
-  }, fmt0(weatherForecast.factor * 100), "%"), " vom saisonalen Mittel", weatherForecast.factor < 0.85 ? " — unterdurchschnittlich, Speicher hält mehr Reserve" : weatherForecast.factor > 1.15 ? " — überdurchschnittlich, Speicher verlässt sich mehr auf PV" : " — normal"), /*#__PURE__*/React.createElement("button", {
+  }, fmt0(weatherForecast.factor * 100), "%"), " vom saisonalen Mittel", weatherForecast.factor < 0.85 ? " — unterdurchschnittlich, Speicher hält mehr Reserve" : weatherForecast.factor > 1.15 ? " — überdurchschnittlich, Speicher verlässt sich mehr auf PV" : " — normal"), weatherForecast.modelsUsed && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      paddingTop: 10,
+      borderTop: "1px solid var(--stc-border)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "var(--stc-muted)",
+      marginBottom: 4
+    }
+  }, "📡 Quellen dieser Prognose (", weatherForecast.modelsUsed.length, " unabhängige Wetterdienste):"), weatherForecast.modelsUsed.map(m => /*#__PURE__*/React.createElement("div", {
+    key: m.id,
+    style: {
+      fontSize: 10,
+      color: "var(--stc-muted-2)",
+      marginBottom: 1
+    }
+  }, "• ", /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: "var(--stc-muted)"
+    }
+  }, m.label), " — ", m.org)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 9,
+      color: "var(--stc-muted-2)",
+      marginTop: 4
+    }
+  }, "Alle Modelle assimilieren laufend Boden-, Radar- und Satellitendaten. Angezeigter Wert = Konsens (Mittelwert); \"±\" zeigt die Streuung zwischen den Modellen als Unsicherheitsmass.")), weatherLastUpdated && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 10,
+      paddingTop: 10,
+      borderTop: "1px solid var(--stc-border)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: "var(--stc-muted-2)"
+    }
+  }, "🕐 Zuletzt aktualisiert: ", weatherLastUpdated.toLocaleTimeString("de-CH", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }), " Uhr"), /*#__PURE__*/React.createElement("button", {
+    onClick: loadWeatherForecast,
+    disabled: weatherLoading,
+    title: "Jetzt aktualisieren",
+    style: {
+      fontSize: 11,
+      color: "var(--stc-muted)",
+      background: "transparent",
+      border: "1px solid var(--stc-border)",
+      borderRadius: 6,
+      padding: "3px 8px"
+    }
+  }, "🔄")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "var(--stc-muted-2)"
+    }
+  }, "Automatisch alle 3 Std. aktualisieren"), /*#__PURE__*/React.createElement(Toggle, {
+    checked: weatherAutoRefresh,
+    onChange: setWeatherAutoRefresh,
+    color: "#4FA88C"
+  })), /*#__PURE__*/React.createElement("button", {
     onClick: () => setWeatherForecast(null),
     style: {
       fontSize: 11,
-      marginTop: 6,
+      marginTop: 10,
       textDecoration: "underline",
       color: "var(--stc-muted)",
       background: "transparent",
       border: "none",
       padding: 0
     }
-  }, "Prognose-Bias deaktivieren"))), /*#__PURE__*/React.createElement("div", {
+  }, "Prognose-Bias deaktivieren"))), /*#__PURE__*/React.createElement(Tile, {
+    id: "netzkarte",
+    title: "Netzinfrastruktur",
+    icon: "🗺️",
+    subtitle: "Leitungen, Umspannwerke & Kraftwerke rund um den gewählten Standort (OpenStreetMap-Daten).",
+    collapsed: !!tileCollapsed.netzkarte,
+    onToggleCollapsed: () => toggleTileCollapsed("netzkarte"),
+    dragProps: makeDragProps("netzkarte"),
+    order: tileOrder.indexOf("netzkarte")
+  }, /*#__PURE__*/React.createElement("iframe", {
+    title: "Netzinfrastruktur-Karte (OpenInfraMap)",
+    src: `https://openinframap.org/#13/${weatherLoc.lat}/${weatherLoc.lon}`,
     style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel)",
-      border: "1px solid var(--stc-border)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "var(--stc-muted)",
-      marginBottom: 4
-    }
-  }, "4 · 💶 Preissignal EW"), /*#__PURE__*/React.createElement("div", {
+      width: "100%",
+      height: 320,
+      border: "none",
+      borderRadius: 10
+    },
+    loading: "lazy"
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: "var(--stc-muted-2)",
-      marginBottom: 10
+      marginTop: 8
     }
-  }, "Vom Elektrizitätswerk übermittelter Tarifplan. Nicht jedes EW arbeitet gleich — Modus wählen:"), /*#__PURE__*/React.createElement("div", {
+  }, "Quelle: ", /*#__PURE__*/React.createElement("a", {
+    href: "https://openinframap.org/",
+    target: "_blank",
+    rel: "noopener noreferrer",
+    style: {
+      color: "var(--stc-muted)"
+    }
+  }, "OpenInfraMap"), " — offene, gemeinschaftlich erhobene Infrastrukturdaten (ODbL-Lizenz). Karte folgt automatisch dem in der Wetterprognose gewählten Standort.")), /*#__PURE__*/React.createElement(Tile, {
+    id: "preissignal",
+    title: "Preissignal EW",
+    icon: "💶",
+    subtitle: "Vom Elektrizitätswerk übermittelter Tarifplan — Modus wählen.",
+    toggleable: true,
+    enabled: tileEnabled.preissignal !== false,
+    onToggleEnabled: () => toggleTileEnabled("preissignal"),
+    collapsed: !!tileCollapsed.preissignal,
+    onToggleCollapsed: () => toggleTileCollapsed("preissignal"),
+    dragProps: makeDragProps("preissignal"),
+    order: tileOrder.indexOf("preissignal")
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 6,
@@ -3856,24 +4192,15 @@ function StromtarifCockpit() {
       color: "var(--stc-muted-2)",
       marginTop: 4
     }
-  }, "Fliesst als zusätzlicher Ertrag in die Amortisationsrechnung der Batterie ein.")))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      borderRadius: 14,
-      padding: 16,
-      marginTop: 16,
-      backgroundColor: "var(--stc-panel)",
-      border: "1px solid var(--stc-border)",
-      boxShadow: "0 2px 16px rgba(0,0,0,0.25)"
-    }
+  }, "Fliesst als zusätzlicher Ertrag in die Amortisationsrechnung der Batterie ein.")))), /*#__PURE__*/React.createElement(Tile, {
+    id: "tarifparameter",
+    title: "Tarifparameter",
+    icon: "⚙️",
+    collapsed: !!tileCollapsed.tarifparameter,
+    onToggleCollapsed: () => toggleTileCollapsed("tarifparameter"),
+    dragProps: makeDragProps("tarifparameter"),
+    order: tileOrder.indexOf("tarifparameter")
   }, /*#__PURE__*/React.createElement("div", {
-    className: "stc-mono",
-    style: {
-      fontSize: 11,
-      textTransform: "uppercase",
-      color: "var(--stc-muted)",
-      marginBottom: 12
-    }
-  }, "5 · Tarifparameter"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3941,9 +4268,16 @@ function StromtarifCockpit() {
       fontSize: 11,
       textTransform: "uppercase",
       color: "var(--stc-muted)",
-      margin: "16px 0 8px"
+      margin: "16px 0 8px",
+      order: 99
     }
-  }, "6 · Hebel (per Button ein-/ausschaltbar)"), /*#__PURE__*/React.createElement(LeverButton, {
+  }, "Hebel (per Button ein-/ausschaltbar)"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      order: 99,
+      display: "flex",
+      flexDirection: "column"
+    }
+  }, /*#__PURE__*/React.createElement(LeverButton, {
     icon: "☀️",
     title: "Photovoltaikanlage",
     color: "#4FA88C",
@@ -4265,7 +4599,20 @@ function StromtarifCockpit() {
       fontSize: 11,
       color: "var(--stc-muted-2)"
     }
-  }, "Gesamtleistung: ", fmt1(levers.ladKw * levers.ladCount), " kW"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, "Gesamtleistung: ", fmt1(levers.ladKw * levers.ladCount), " kW"))), /*#__PURE__*/React.createElement("button", {
+    onClick: resetTileLayout,
+    style: {
+      order: 100,
+      alignSelf: "flex-start",
+      fontSize: 10,
+      marginTop: 16,
+      textDecoration: "underline",
+      color: "var(--stc-muted-2)",
+      background: "transparent",
+      border: "none",
+      padding: 0
+    }
+  }, "Kachel-Anordnung zurücksetzen")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexWrap: "wrap",
